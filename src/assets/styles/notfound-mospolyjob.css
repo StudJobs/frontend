@@ -1,0 +1,39 @@
+.notfound-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(40px, 8vw, 100px) clamp(5vw, 10vw, 120px);
+  background: #fff;
+  color: #000;
+  min-height: 70vh;
+}
+
+.notfound-title {
+  font-size: clamp(26px, 3vw, 42px);
+  font-weight: 500;
+  margin-bottom: clamp(24px, 5vw, 48px);
+}
+
+.notfound-image {
+  width: clamp(240px, 40vw, 520px);
+  height: auto;
+  margin-bottom: clamp(24px, 5vw, 48px);
+}
+
+.notfound-text {
+  font-size: clamp(16px, 1.5vw, 22px);
+  margin-bottom: clamp(10px, 2vw, 24px);
+}
+
+.notfound-link a {
+  text-decoration: underline;
+  font-weight: 600;
+  color: #000;
+  font-size: clamp(16px, 1.5vw, 22px);
+  transition: color 0.3s;
+}
+.notfound-link a:hover {
+  color: #555;
+}

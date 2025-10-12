@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Gilroy";
+  src: url("/src/assets/fonts/Gilroy-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gilroy";
+  src: url("/src/assets/fonts/Gilroy-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gilroy";
+  src: url("/src/assets/fonts/Gilroy-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root{
+  --black: #0B0B0B;
+  --white: #FFFFFF;
+  --gray-1:#EAEAEA;
+  --gray-2:#C8C8C8;
+  --text-muted:#CFCFCF;
+  --brand-red:#E34E5D;
+  --brand-green:#4BB832;
+  --brand-purple:#7E49A0;
+}
+
+html, body, #root { height: 100%; }
+body{
+  background: var(--white);
+  color: #000;
+  font-family: "Gilroy", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+}
+
+.container-xxl{
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 2vw, 24px);
+}
