@@ -31,7 +31,7 @@
   border: none;
   border-radius: 9999px;
   padding: clamp(12px, 1.5vw, 16px);
-  margin-bottom: clamp(16px, 2vw, 24px);
+  margin-bottom: 8px; /* небольшой отступ, остальное даёт ошибка */
   text-align: center;
   font-size: clamp(14px, 1.2vw, 18px);
 }
@@ -39,6 +39,19 @@
 .auth-input::placeholder {
   color: #fff;
   opacity: 0.85;
+}
+
+/* ошибки под полями (как на регистрации) */
+.auth-field-error {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  color: #E63246;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .auth-button {
@@ -58,18 +71,22 @@
 }
 
 .auth-register {
-  margin-top: clamp(20px, 3vw, 40px);
+  margin-top: 0;        /* убираем лишний отступ сверху */
   font-size: clamp(15px, 1.3vw, 18px);
 }
+
 .auth-register a {
   text-decoration: underline;
   font-weight: 600;
   color: #000;
   transition: color 0.3s;
 }
+
 .auth-register a:hover {
   color: #333;
 }
+
+/* общий блок ошибки от сервера под формой */
 
 .auth-error-placeholder {
   min-height: clamp(30px, 3vw, 40px);
@@ -87,7 +104,23 @@
   animation: fadeIn 0.25s ease-in-out;
 }
 
+.auth-forgot {
+  margin-top: 18px;     /* расстояние от кнопки до ссылки */
+  margin-bottom: 22px;  /* расстояние до блока регистрации */
+  font-size: clamp(14px, 1.2vw, 17px);
+}
+
+.auth-forgot a {
+  color: #000;
+  text-decoration: underline;
+  transition: color 0.25s ease;
+}
+
+.auth-forgot a:hover {
+  color: #333;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }

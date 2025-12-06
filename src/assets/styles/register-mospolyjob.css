@@ -1,3 +1,5 @@
+/* ===== ОБЩИЙ КОНТЕЙНЕР ===== */
+
 .register-wrap {
   display: flex;
   flex-direction: column;
@@ -16,6 +18,8 @@
   margin-bottom: clamp(24px, 5vw, 48px);
 }
 
+/* ===== ФОРМА ===== */
+
 .register-form {
   display: flex;
   flex-direction: column;
@@ -31,7 +35,7 @@
   border: none;
   border-radius: 9999px;
   padding: clamp(12px, 1.5vw, 16px);
-  margin-bottom: clamp(16px, 2vw, 24px);
+  margin-bottom: 8px; /* небольшой отступ, основной — у ошибки */
   text-align: center;
   font-size: clamp(14px, 1.2vw, 18px);
 }
@@ -41,25 +45,68 @@
   opacity: 0.85;
 }
 
-.register-checkboxes {
-  display: flex;
-  justify-content: center;
-  gap: clamp(20px, 3vw, 40px);
-  margin: clamp(10px, 2vw, 20px) 0 clamp(20px, 3vw, 40px);
-  font-size: clamp(14px, 1.2vw, 18px);
+/* ===== ТЕКСТ ОШИБОК ПОД ПОЛЯМИ ===== */
+
+.register-field-error {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  color: #E63246;              /* красный */
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
 }
-.register-checkboxes label {
+
+/* ===== БЛОК РОЛЕЙ ===== */
+
+.register-roles {
   display: flex;
-  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 32px;
+  margin: 16px 0 20px;
+}
+
+/* одна роль */
+.register-role {
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
+  flex: 1;
   cursor: pointer;
 }
-.register-checkboxes input[type="checkbox"] {
+
+/* чекбокс роли */
+.register-role-input {
   accent-color: #000;
   width: 16px;
   height: 16px;
   cursor: pointer;
+  margin-top: 2px;
 }
+
+/* текст рядом с чекбоксом */
+.register-role-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.register-role-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.register-role-subtitle {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+/* ===== ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ ===== */
 
 .register-privacy {
   display: flex;
@@ -67,7 +114,8 @@
   justify-content: center;
   gap: 8px;
   font-size: clamp(13px, 1.2vw, 17px);
-  margin-bottom: clamp(20px, 3vw, 40px);
+  margin-top: 8px;
+  margin-bottom: clamp(20px, 3vw, 32px);
   cursor: pointer;
   flex-wrap: wrap;
   text-align: center;
@@ -75,34 +123,22 @@
 
 .register-privacy input[type="checkbox"] {
   accent-color: #000;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
 }
 
 .register-privacy a {
   text-decoration: underline;
   color: #000;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s;
 }
+
 .register-privacy a:hover {
   opacity: 0.8;
 }
 
-.register-login-link {
-  margin-top: clamp(16px, 2vw, 24px);
-  font-size: clamp(14px, 1.2vw, 18px);
-  text-align: center;
-}
-.register-login-link a {
-  text-decoration: underline;
-  font-weight: 600;
-  color: #000;
-  transition: color 0.3s;
-}
-.register-login-link a:hover {
-  color: #333;
-}
+/* ===== КНОПКА РЕГИСТРАЦИИ ===== */
 
 .register-button {
   width: clamp(200px, 25vw, 300px);
@@ -115,9 +151,31 @@
   cursor: pointer;
   transition: background 0.3s;
 }
+
 .register-button:hover {
   background: #222;
 }
+
+/* ===== ССЫЛКА НА ВХОД ===== */
+
+.register-login-link {
+  margin-top: clamp(16px, 2vw, 24px);
+  font-size: clamp(14px, 1.2vw, 18px);
+  text-align: center;
+}
+
+.register-login-link a {
+  text-decoration: underline;
+  font-weight: 600;
+  color: #000;
+  transition: color 0.3s;
+}
+
+.register-login-link a:hover {
+  color: #333;
+}
+
+/* ===== БЛОК ОШИБКИ ОТ СЕРВЕРА ===== */
 
 .register-error-placeholder {
   min-height: clamp(30px, 3vw, 40px);
@@ -143,7 +201,9 @@
   animation: fadeIn 0.25s ease-in-out;
 }
 
+/* ===== АНИМАЦИЯ ===== */
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }

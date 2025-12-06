@@ -11,7 +11,17 @@ export default defineConfig({
       "@pages": path.resolve(__dirname, "src/pages"),
     },
   },
+
   server: {
     port: 5173,
+
+    // *** Главное — прокси API ***
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8000", // API Gateway backend
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

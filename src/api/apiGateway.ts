@@ -1,7 +1,5 @@
 import axios from "axios";
 
-const API_GATEWAY_URL = "http://localhost:5000/api"; // адрес backend сервера, нужно заменить!!!!
-
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   url: string;
@@ -10,27 +8,38 @@ export interface ApiRequestOptions {
   headers?: Record<string, string>;
 }
 
-/*Фронт общается с бэком*/
-export async function apiGateway<T = any>(options: ApiRequestOptions): Promise<T> {
+const API_GATEWAY_URL = import.meta.env.VITE_API_URL || "/api/v1";
+
+export async function apiGateway<T = any>(
+  options: ApiRequestOptions
+): Promise<T> {
   const { method = "GET", url, data, params, headers } = options;
 
+  const normalizedUrl = url.startsWith("/") ? url : `/${url}`;
+
   try {
-    const response = await axios({
-      baseURL: API_GATEWAY_URL,
+    const token =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("token")
+        : null;
+
+    const response = await axios.request<T>({
       method,
-      url,
+      url: `${API_GATEWAY_URL}${normalizedUrl}`,
       data,
       params,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
       withCredentials: true,
     });
 
-    return response.data;
+    return response.data as T;
   } catch (error: any) {
-    console.error("API Gateway error:", error.response?.data || error.message);
-    throw error.response?.data || error;
+    const payload = error?.response?.data || error?.message || error;
+    console.error("API Gateway error:", payload);
+    throw payload;
   }
 }
