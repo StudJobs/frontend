@@ -163,6 +163,36 @@
   margin-bottom: 4px;
 }
 
+.achievements-block {
+  margin-top: 16px;
+}
+
+.upload-achievement {
+  margin-bottom: 12px;
+}
+
+.achievement-rename-input {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.profile-bottom-block {
+  display: block;
+  margin-top: 40px;
+}
+
+.profile-about {
+  margin-bottom: 40px;
+}
+
+.profile-achievements {
+  max-width: 800px;
+}
+
+
 @media (max-width: 768px) {
   .profile-card {
     flex-direction: column;
