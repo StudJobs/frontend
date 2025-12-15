@@ -6,7 +6,10 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { apiGateway } from "../api/apiGateway";
 
-type BackendRole = "ROLE_STUDENT" | "ROLE_DEVELOPER" | "ROLE_HR" | "ROLE_COMPANY";
+type BackendRole =
+  | "ROLE_STUDENT"
+  | "ROLE_EMPLOYER"
+  | "ROLE_COMPANY";
 
 type FieldErrors = {
   email: string;
@@ -41,17 +44,15 @@ export default function Auth() {
     password: "",
   });
 
-  // общий текст ошибки от сервера
   const [error, setError] = useState("");
 
-  // если пользователь уже авторизован — не пускаем на страницу авторизации
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
     const storedRole = localStorage.getItem("role") as BackendRole | null;
 
-    if (storedRole === "ROLE_HR" || storedRole === "ROLE_COMPANY") {
+    if (storedRole === "ROLE_EMPLOYER" || storedRole === "ROLE_COMPANY") {
       navigate("/hr-profile", { replace: true });
     } else {
       navigate("/profile", { replace: true });
@@ -70,7 +71,6 @@ export default function Auth() {
     let hasError = false;
     const newErrors: FieldErrors = { email: "", password: "" };
 
-    // email
     if (!trimmedEmail) {
       newErrors.email = "Введите email.";
       hasError = true;
@@ -82,7 +82,6 @@ export default function Auth() {
       }
     }
 
-    // пароль
     if (!trimmedPassword) {
       newErrors.password = "Введите пароль.";
       hasError = true;
@@ -125,8 +124,7 @@ export default function Auth() {
 
       localStorage.setItem("role", finalRole);
 
-      // простая маршрутизация по роли
-      if (finalRole === "ROLE_HR" || finalRole === "ROLE_COMPANY") {
+      if (finalRole === "ROLE_EMPLOYER" || finalRole === "ROLE_COMPANY") {
         navigate("/hr-profile");
       } else {
         navigate("/profile");
@@ -139,7 +137,6 @@ export default function Auth() {
       if (err && typeof err === "object") {
         const raw = (err.message || (err as any).detail || "").toString();
 
-        // маппим бекендовый текст на русский
         if (/invalid email or password/i.test(raw)) {
           msg = "Неверный email или пароль.";
         } else if (raw) {

@@ -3,16 +3,10 @@ import { Navigate } from "react-router-dom";
 
 export type RoleType =
   | "ROLE_STUDENT"
-  | "ROLE_DEVELOPER"
-  | "ROLE_HR"
-  | "ROLE_COMPANY";
+  | "ROLE_EMPLOYER";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
-  /**
-   * Роли, которым разрешён доступ к этому маршруту.
-   * Если не передано — пустим любого залогиненного.
-   */
   allowedRoles?: RoleType[];
 }
 
@@ -30,12 +24,10 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
       ? (window.localStorage.getItem("role") as RoleType | null)
       : null;
 
-  // Не авторизован — уходим на авторизацию
   if (!token) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Авторизован, но роль не подходит под маршрут
   if (allowedRoles && (!userRole || !allowedRoles.includes(userRole))) {
     return <Navigate to="/" replace />;
   }

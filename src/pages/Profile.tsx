@@ -9,27 +9,18 @@ import { apiGateway } from "../api/apiGateway";
 import AchievementsBlock, {
   AchievementsBlockHandle,
 } from "../components/profile/AchievementsBlock";
-import {
-  AchievementsAPI,
-  AchievementItem,
-} from "../api/achievements";
+import { AchievementsAPI, AchievementItem } from "../api/achievements";
 
 type UserProfile = {
   first_name?: string;
   last_name?: string;
-  middle_name?: string;
   age?: number;
-  gender?: string;
-  city?: string;
-  course?: string;
-  specialization?: string;
-  education_level?: string;
-  university?: string;
-  experience?: string;
-  phone?: string;
   email?: string;
+  telegram?: string;
   tg?: string;
   description?: string;
+  profession_category?: string;
+  specialization?: string;
 };
 
 const unwrap = (resp: any) => resp?.data ?? resp;
@@ -40,11 +31,13 @@ const API_BASE =
 const AVATAR_PREFIX = "user_avatar_";
 const RESUME_PREFIX = "user_resume_";
 
-type ResumeInfo = {
-  id: string;
-  name: string;
-  url: string;
-} | null;
+type ResumeInfo =
+  | {
+      id: string;
+      name: string;
+      url: string;
+    }
+  | null;
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -119,8 +112,7 @@ export default function Profile() {
 
       const resumeItem = list.find(isResume);
       if (resumeItem?.url) {
-        const rawName =
-          resumeItem.file_name || resumeItem.name || "Резюме";
+        const rawName = resumeItem.file_name || resumeItem.name || "Резюме";
         const niceName = rawName.replace(RESUME_PREFIX, "");
         setResume({
           id: resumeItem.id,
@@ -146,7 +138,7 @@ export default function Profile() {
   }, [navigate]);
 
   const p = profile || {};
-  const fullName = [p.last_name, p.first_name, p.middle_name]
+  const fullName = [p.last_name, p.first_name]
     .filter(Boolean)
     .join(" ");
 
@@ -156,9 +148,7 @@ export default function Profile() {
     resumeInputRef.current?.click();
   };
 
-  const handleResumeChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -218,10 +208,7 @@ export default function Profile() {
           <div>
             <p className="profile-error">{error}</p>
             <div className="profile-buttons">
-              <button
-                className="profile-btn logout-btn"
-                onClick={handleLogout}
-              >
+              <button className="profile-btn logout-btn" onClick={handleLogout}>
                 Выйти из аккаунта
               </button>
             </div>
@@ -232,10 +219,7 @@ export default function Profile() {
           <>
             <div className="profile-card">
               <div className="profile-photo">
-                <img
-                  src={avatarUrl || avatarFallback}
-                  alt="Фото пользователя"
-                />
+                <img src={avatarUrl || avatarFallback} alt="Фото пользователя" />
               </div>
 
               <div className="profile-main-info">
@@ -244,35 +228,39 @@ export default function Profile() {
                 </h1>
 
                 <ul className="profile-main-list">
-                  <li>Возраст: {p.age ? `${p.age} лет` : "не указан"}</li>
-                  <li>Пол: {p.gender || "не указан"}</li>
-                  <li>Город: {p.city || "не указан"}</li>
-                  <li>Опыт работы: {p.experience || "не указан"}</li>
-                  <li>Курс: {p.course || "не указан"}</li>
-                  <li>Профиль: {p.specialization || "АСОИУ"}</li>
-                  <li>
-                    Уровень образования: {p.education_level || "не указан"}
-                  </li>
-                  <li>Форма обучения: {p.university || "не указана"}</li>
+                  {typeof p.age === "number" && <li>Возраст: {p.age} лет</li>}
+
+                  {(p.profession_category || p.specialization) && (
+                    <li>Профиль: {p.profession_category || p.specialization}</li>
+                  )}
                 </ul>
 
                 <div className="profile-contacts-block">
                   <p className="profile-contacts-title">Контакты:</p>
+
                   <ul className="profile-main-list">
-                    <li>{p.phone || "Телефон не указан"}</li>
-                    <li>{p.email || "E-mail не указан"}</li>
-                    {p.tg && (
-                      <li>
-                        Telegram:{" "}
-                        <a
-                          href={`https://t.me/${p.tg.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {p.tg}
-                        </a>
-                      </li>
-                    )}
+                    <li>Email: {p.email ? p.email : "не указан"}</li>
+
+                    {(() => {
+                      const tgRaw = (p.telegram || p.tg || "").trim();
+                      if (!tgRaw) return <li>Telegram: не указан</li>;
+
+                      const handle = tgRaw.replace("@", "");
+                      const shown = tgRaw.startsWith("@") ? tgRaw : `@${tgRaw}`;
+
+                      return (
+                        <li>
+                          Telegram:{" "}
+                          <a
+                            href={`https://t.me/${handle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {shown}
+                          </a>
+                        </li>
+                      );
+                    })()}
                   </ul>
                 </div>
               </div>
@@ -324,16 +312,13 @@ export default function Profile() {
                     onChange={handleResumeChange}
                   />
 
-                  {resumeError && (
-                    <p className="profile-error">{resumeError}</p>
-                  )}
+                  {resumeError && <p className="profile-error">{resumeError}</p>}
                 </div>
 
                 <AchievementsBlock ref={achievementsRef} />
               </div>
             </div>
 
-            {/* нижние большие кнопки */}
             <div className="profile-buttons">
               <button
                 className="profile-btn"
@@ -347,9 +332,7 @@ export default function Profile() {
                 onClick={handleResumeButtonClick}
                 disabled={resumeUploading}
               >
-                {resumeUploading
-                  ? "Загружаем резюме..."
-                  : "Загрузить резюме"}
+                {resumeUploading ? "Загружаем резюме..." : "Загрузить резюме"}
               </button>
 
               <button
@@ -359,10 +342,7 @@ export default function Profile() {
                 Добавить достижения
               </button>
 
-              <button
-                className="profile-btn logout-btn"
-                onClick={handleLogout}
-              >
+              <button className="profile-btn logout-btn" onClick={handleLogout}>
                 Выйти из аккаунта
               </button>
             </div>
