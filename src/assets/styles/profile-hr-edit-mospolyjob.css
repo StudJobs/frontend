@@ -1,4 +1,4 @@
-.profile-edit-section {
+.hr-profile-edit-section {
   padding: clamp(40px, 5vw, 80px);
   background: #fff;
   color: #000;
@@ -8,29 +8,29 @@
   gap: 30px;
 }
 
-.edit-title {
+.hr-edit-title {
   font-size: clamp(24px, 2.5vw, 34px);
   font-weight: 700;
   margin-bottom: 10px;
 }
 
-.edit-form {
+.hr-edit-form {
   width: 100%;
   max-width: 1150px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 50px;
   box-sizing: border-box;
 }
 
-.photo-upload {
+.hr-photo-upload {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
 }
 
-.profile-preview-rect {
+.hr-profile-preview-rect {
   width: 260px;
   height: 260px;
   border-radius: 16px;
@@ -38,11 +38,11 @@
   object-fit: cover;
 }
 
-#file-upload {
+#hr-file-upload {
   display: none;
 }
 
-.upload-btn {
+.hr-upload-btn {
   background: #000;
   color: #fff;
   padding: 12px 26px;
@@ -51,20 +51,20 @@
   font-size: 16px;
   transition: background 0.3s ease;
 }
-.upload-btn:hover {
+.hr-upload-btn:hover {
   background: #333;
 }
 
-.form-row {
+.hr-form-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 24px;
+  gap: 28px 32px;
   justify-content: space-between;
   width: 100%;
   box-sizing: border-box;
 }
 
-.form-field {
+.hr-form-field {
   flex: 1 1 calc(33.33% - 32px);
   min-width: 280px;
   display: flex;
@@ -72,7 +72,7 @@
   gap: 6px;
 }
 
-.label-title {
+.hr-label-title {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -80,16 +80,16 @@
   font-weight: 500;
   color: #000;
 }
-.required {
+.hr-required {
   color: #e63246;
   font-size: 18px;
   line-height: 1;
   vertical-align: middle;
 }
 
-input,
-select,
-textarea {
+.hr-edit-form input,
+.hr-edit-form select,
+.hr-edit-form textarea {
   width: 100%;
   padding: 10px 15px !important;
   border: 1.6px solid #c8c8c8;
@@ -101,58 +101,58 @@ textarea {
   height: 58px;
 }
 
-input::placeholder,
-textarea::placeholder {
+.hr-edit-form input::placeholder,
+.hr-edit-form textarea::placeholder {
   color: #aaa;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+.hr-edit-form input:focus,
+.hr-edit-form select:focus,
+.hr-edit-form textarea:focus {
   outline: none;
   border-color: #4b6eb9;
   box-shadow: 0 0 0 3px rgba(75, 110, 185, 0.2);
 }
 
-input.error,
-select.error,
-textarea.error {
+.hr-edit-form input.error,
+.hr-edit-form select.error,
+.hr-edit-form textarea.error {
   border-color: #e63246;
   box-shadow: 0 0 0 3px rgba(230, 50, 70, 0.15);
 }
 
-textarea {
-  min-height: 140px;
+.hr-edit-form textarea {
+  min-height: 180px;
   resize: vertical;
   width: 100%;
   height: auto;
 }
 
-.error-text {
+.hr-error-text {
   color: #e63246;
   font-size: 14px;
   margin-top: 4px;
 }
 
-.form-message {
+.hr-form-message {
   text-align: center;
   font-weight: 500;
   margin-top: 25px;
 }
 
-.form-message.success {
+.hr-form-message.success {
   color: #4bb832;
 }
-.form-message.error {
+.hr-form-message.error {
   color: #e63246;
 }
 
-.submit-row {
+.hr-submit-row {
   text-align: center;
-  margin-top: 12px;
+  margin-top: 20px;
 }
 
-.profile-btn {
+.hr-profile-btn {
   background: #000;
   color: #fff;
   border: none;
@@ -162,24 +162,24 @@ textarea {
   cursor: pointer;
   transition: background 0.3s ease;
 }
-.profile-btn:hover {
+.hr-profile-btn:hover {
   background: #333;
 }
 
-.subsection-title {
+.hr-subsection-title {
   font-size: clamp(18px, 2vw, 22px);
   font-weight: 600;
-  margin-top: 8px;
+  margin-top: 14px;
   width: 100%;
 }
 
 @media (max-width: 992px) {
-  .form-field {
+  .hr-form-field {
     flex: 1 1 calc(50% - 20px);
   }
 }
 @media (max-width: 600px) {
-  .form-field {
+  .hr-form-field {
     flex: 1 1 100%;
   }
 }

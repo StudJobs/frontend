@@ -106,9 +106,7 @@ export default function Profile() {
       const list: AchievementItem[] = await AchievementsAPI.list();
 
       const avatarItem = list.find(isAvatar);
-      if (avatarItem?.url) {
-        setAvatarUrl(avatarItem.url);
-      }
+      if (avatarItem?.url) setAvatarUrl(avatarItem.url);
 
       const resumeItem = list.find(isResume);
       if (resumeItem?.url) {
@@ -138,10 +136,7 @@ export default function Profile() {
   }, [navigate]);
 
   const p = profile || {};
-  const fullName = [p.last_name, p.first_name]
-    .filter(Boolean)
-    .join(" ");
-
+  const fullName = [p.last_name, p.first_name].filter(Boolean).join(" ");
   const hasDescription = !!p.description && p.description.trim().length > 0;
 
   const handleResumeButtonClick = () => {
@@ -197,6 +192,14 @@ export default function Profile() {
     }
   };
 
+  const tgRaw = (p.telegram || p.tg || "").trim();
+  const tgShown = tgRaw
+    ? tgRaw.startsWith("@")
+      ? tgRaw
+      : `@${tgRaw}`
+    : "";
+  const tgHandle = tgRaw ? tgRaw.replace("@", "") : "";
+
   return (
     <div className="page-frame">
       <Header />
@@ -222,45 +225,38 @@ export default function Profile() {
                 <img src={avatarUrl || avatarFallback} alt="Фото пользователя" />
               </div>
 
-              <div className="profile-main-info">
-                <h1 className="profile-name">
+              <div className="profile-info">
+                <h2 className="profile-name">
                   {fullName || "Имя пользователя не указано"}
-                </h1>
+                </h2>
 
-                <ul className="profile-main-list">
-                  {typeof p.age === "number" && <li>Возраст: {p.age} лет</li>}
-
-                  {(p.profession_category || p.specialization) && (
-                    <li>Профиль: {p.profession_category || p.specialization}</li>
-                  )}
+                <ul className="profile-details-list">
+                  <li>
+                    Возраст: {typeof p.age === "number" ? `${p.age} лет` : "—"}
+                  </li>
+                  <li>
+                    Профиль: {p.profession_category || p.specialization || "—"}
+                  </li>
                 </ul>
 
-                <div className="profile-contacts-block">
-                  <p className="profile-contacts-title">Контакты:</p>
-
-                  <ul className="profile-main-list">
+                <div className="profile-contacts">
+                  <strong>Контакты:</strong>
+                  <ul className="profile-contacts-list">
                     <li>Email: {p.email ? p.email : "не указан"}</li>
-
-                    {(() => {
-                      const tgRaw = (p.telegram || p.tg || "").trim();
-                      if (!tgRaw) return <li>Telegram: не указан</li>;
-
-                      const handle = tgRaw.replace("@", "");
-                      const shown = tgRaw.startsWith("@") ? tgRaw : `@${tgRaw}`;
-
-                      return (
-                        <li>
-                          Telegram:{" "}
-                          <a
-                            href={`https://t.me/${handle}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {shown}
-                          </a>
-                        </li>
-                      );
-                    })()}
+                    <li>
+                      Telegram:{" "}
+                      {tgRaw ? (
+                        <a
+                          href={`https://t.me/${tgHandle}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {tgShown}
+                        </a>
+                      ) : (
+                        "не указан"
+                      )}
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -268,7 +264,7 @@ export default function Profile() {
 
             <div className="profile-bottom-block">
               <div className="profile-about">
-                <h2>О себе:</h2>
+                <h2 className="profile-about-title">О себе:</h2>
                 <p>
                   {hasDescription
                     ? p.description
@@ -281,6 +277,7 @@ export default function Profile() {
 
                 <div className="profile-resume-block">
                   <p>Резюме:</p>
+
                   {resume ? (
                     <div className="resume-row">
                       <a

@@ -7,7 +7,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: clamp(20px, 3vw, 40px);
+
+  gap: 18px;
 }
 
 .profile-card {
@@ -15,6 +16,8 @@
   flex-wrap: wrap;
   gap: clamp(24px, 4vw, 60px);
   align-items: flex-start;
+
+  margin-bottom: 0;
 }
 
 .profile-photo img {
@@ -126,6 +129,7 @@
 .logout-btn:hover {
   background: #c02838;
 }
+
 .profile-description {
   margin-top: clamp(16px, 2vw, 24px);
   font-size: clamp(14px, 1.2vw, 18px);
@@ -181,17 +185,43 @@
 
 .profile-bottom-block {
   display: block;
-  margin-top: 40px;
+  margin-top: 0;
+  padding-top: 0;
 }
 
-.profile-about {
-  margin-bottom: 40px;
+.profile-about-title {
+  font-weight: 800 !important;
+  font-size: clamp(16px, 1.4vw, 20px);
+  margin: 0 0 8px 0;
+}
+
+.profile-about p {
+  margin: 0;
+  line-height: 1.7;
 }
 
 .profile-achievements {
+  margin-top: clamp(28px, 3vw, 40px);
   max-width: 800px;
 }
+.profile-achievements h2 {
+  font-weight: 800;
+  font-size: clamp(16px, 1.4vw, 20px);
+  margin-bottom: 10px;
+}
 
+.profile-resume-block > p {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.profile-resume-block {
+  margin-bottom: 16px;
+}
+
+.resume-row {
+  margin-top: 4px;
+}
 
 @media (max-width: 768px) {
   .profile-card {
@@ -209,11 +239,12 @@
     align-items: center;
   }
 
-    .profile-details-list {
+  .profile-details-list {
     text-align: left;
     padding-left: 30px;
   }
-    .profile-contacts-list {
+
+  .profile-contacts-list {
     padding-left: 30px;
   }
 }

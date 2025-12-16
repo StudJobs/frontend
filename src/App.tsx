@@ -6,6 +6,7 @@ import ProfileHRFull from "./pages/ProfileHRFull";
 import ProfileEdit from "./pages/ProfileEdit";
 import AuthOrRegister from "./pages/AuthOrRegister";
 import PrivateRoute from "./components/PrivateRoute";
+import ProfileHREdit from "./pages/ProfileHREdit";
 
 export default function App() {
   return (
@@ -38,6 +39,14 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ROLE_EMPLOYER"]}>
               <ProfileHRFull />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/hr-profile/edit"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER"]}>
+              <ProfileHREdit />
             </PrivateRoute>
           }
         />
