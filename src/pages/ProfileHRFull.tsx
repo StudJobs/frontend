@@ -10,6 +10,7 @@ import spiral from "../assets/images/spiral.png";
 import checkLong from "../assets/images/check-long.png";
 
 import { apiGateway } from "../api/apiGateway";
+import { AchievementsAPI, AchievementItem } from "../api/achievements";
 
 type UserProfile = {
   first_name?: string;
@@ -21,15 +22,24 @@ type UserProfile = {
   description?: string;
   profession_category?: string;
   specialization?: string;
+
+  avatar_url?: string;
+  avatar_id?: string;
 };
 
 const unwrap = (resp: any) => resp?.data ?? resp ?? {};
+
+const AVATAR_PREFIX = "user_avatar_";
+const hasAvatarPrefix = (v?: string | null) =>
+  !!v && String(v).startsWith(AVATAR_PREFIX);
 
 export default function ProfileHRFull() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const vacancies = [
     { id: 1, title: "Вакансия 1", color: "red", decor: wave },
@@ -42,6 +52,9 @@ export default function ProfileHRFull() {
     { id: 2, title: "Компания 2", color: "purple", decor: checkLong },
     { id: 3, title: "Компания 3", color: "red", decor: wave },
   ];
+
+  const isAvatar = (it: AchievementItem) =>
+    [it.id, it.name, it.file_name].some((v) => hasAvatarPrefix(v));
 
   useEffect(() => {
     const token = localStorage.getItem("token") || "";
@@ -71,6 +84,22 @@ export default function ProfileHRFull() {
 
         const data: UserProfile = unwrap(resp);
         setProfile(data);
+
+        try {
+          const list = await AchievementsAPI.list();
+          const avatarItem = list.find(isAvatar);
+
+          if (avatarItem?.url) {
+            setAvatarUrl(avatarItem.url);
+          } else if (data?.avatar_url) {
+            setAvatarUrl(data.avatar_url);
+          } else {
+            setAvatarUrl(null);
+          }
+        } catch (err) {
+          console.warn("Не удалось получить аватар из achievements:", err);
+          setAvatarUrl(data?.avatar_url || null);
+        }
       } catch (e) {
         console.error("Не удалось загрузить профиль HR:", e);
         localStorage.removeItem("token");
@@ -111,17 +140,17 @@ export default function ProfileHRFull() {
       <section className="profile-section">
         <div className="profile-card">
           <div className="profile-photo">
-            <img src={avatarFallback} alt="Фото HR" />
+            <img src={avatarUrl || avatarFallback} alt="Фото HR" />
           </div>
 
           <div className="profile-info">
-            <h2 className="profile-name">{loading ? "Загрузка..." : fullName}</h2>
+            <h2 className="profile-name">
+              {loading ? "Загрузка..." : fullName}
+            </h2>
 
             <ul className="profile-details-list">
               <li>Возраст: {typeof p.age === "number" ? `${p.age} лет` : "—"}</li>
-              <li>
-                Профиль: {p.profession_category || p.specialization || "—"}
-              </li>
+              <li>Профиль: {p.profession_category || p.specialization || "—"}</li>
             </ul>
 
             <div className="profile-contacts">
@@ -193,7 +222,10 @@ export default function ProfileHRFull() {
           <h3>Компании, в которых числится HR:</h3>
           <div className="hr-cards">
             {companies.map((comp) => (
-              <article key={comp.id} className={`hr-card hr-card--${comp.color}`}>
+              <article
+                key={comp.id}
+                className={`hr-card hr-card--${comp.color}`}
+              >
                 <div className="hr-card-decor">
                   <img src={comp.decor} alt="" />
                 </div>

@@ -19,7 +19,7 @@ const hasAvatarPrefix = (v?: string | null) =>
   !!v && String(v).startsWith(AVATAR_PREFIX);
 
 const normalizeTelegram = (value: string): string | undefined => {
-  const v = value.trim();
+  const v = (value || "").trim();
   if (!v) return undefined;
 
   const cleaned = v.replace(/^https?:\/\/t\.me\//i, "");
@@ -33,6 +33,7 @@ export default function ProfileHREdit() {
 
   const [photo, setPhoto] = useState<string>(avatarDefault);
   const [avatarUploading, setAvatarUploading] = useState(false);
+
   const [avatarId, setAvatarId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -50,21 +51,24 @@ export default function ProfileHREdit() {
 
   useEffect(() => {
     const token = localStorage.getItem("token") || "";
-    const role = localStorage.getItem("role") || "";
+    const role = (localStorage.getItem("role") || "").trim();
+
+    const isHr =
+      role === "ROLE_EMPLOYER" || role === "ROLE_COMPANY" || role === "hr";
 
     if (!token) {
-      navigate("/auth");
+      navigate("/auth", { replace: true });
       return;
     }
-    if (role !== "ROLE_EMPLOYER") {
-      navigate("/profile");
+    if (!isHr) {
+      navigate("/profile", { replace: true });
       return;
     }
 
     (async () => {
       try {
         const raw = await apiGateway({ method: "GET", url: "/users/me" });
-        const data = (raw as any).data ?? raw;
+        const data = (raw as any)?.data ?? raw ?? {};
 
         setFormData((prev) => ({
           ...prev,
@@ -81,13 +85,14 @@ export default function ProfileHREdit() {
 
         try {
           const list = await AchievementsAPI.list();
-          const avatarItem = list.find((it) =>
-            [it.id, it.name, it.file_name].some((v) => hasAvatarPrefix(v))
+          const avatarItem = list.find((it: any) =>
+            [it?.id, it?.name, it?.file_name].some((v: any) =>
+              hasAvatarPrefix(v)
+            )
           );
 
           if (avatarItem?.url) {
             setPhoto(avatarItem.url);
-            setAvatarId((prev) => prev ?? avatarItem.id);
           } else if (data.avatar_url) {
             setPhoto(data.avatar_url);
           }
@@ -97,6 +102,7 @@ export default function ProfileHREdit() {
         }
       } catch (e) {
         console.error("Не удалось загрузить профиль HR для редактирования", e);
+        setMessage("Не удалось загрузить профиль. Попробуйте позже.");
       }
     })();
   }, [navigate]);
@@ -208,6 +214,7 @@ export default function ProfileHREdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const validation = validate();
     setErrors(validation);
 
@@ -219,20 +226,19 @@ export default function ProfileHREdit() {
     try {
       setMessage("");
 
-      const tg = normalizeTelegram(formData.telegram);
-
       const payload: any = {
         first_name: formData.name.trim(),
         last_name: formData.surname.trim(),
         age: formData.age ? Number(formData.age) : undefined,
         email: formData.email.trim() || undefined,
-        telegram: tg,
-        tg,
+        telegram: normalizeTelegram(formData.telegram),
         profession_category: formData.profile || undefined,
         description: formData.description || undefined,
       };
 
-      if (avatarId) payload.avatar_id = avatarId;
+      if (avatarId && !hasAvatarPrefix(avatarId)) {
+        payload.avatar_id = avatarId;
+      }
 
       const resp = await apiGateway({
         method: "PATCH",
@@ -242,8 +248,7 @@ export default function ProfileHREdit() {
 
       console.log("HR Profile edit response:", resp);
       setMessage("Данные успешно обновлены!");
-
-      setTimeout(() => navigate("/hr-profile"), 300);
+      setTimeout(() => navigate("/hr-profile", { replace: true }), 250);
     } catch (err: any) {
       console.error("Ошибка сохранения профиля HR:", err);
       const backendMsg =
@@ -268,11 +273,7 @@ export default function ProfileHREdit() {
 
         <form className="edit-form" onSubmit={handleSubmit}>
           <div className="photo-upload">
-            <img
-              src={photo}
-              alt="Фото профиля"
-              className="profile-preview-rect"
-            />
+            <img src={photo} alt="Фото профиля" className="profile-preview-rect" />
             <input
               id="file-upload"
               type="file"
@@ -292,17 +293,19 @@ export default function ProfileHREdit() {
               ["surname", "Фамилия", true],
               ["name", "Имя", true],
             ].map(([field, label, required]) => (
-              <div className="form-field" key={field}>
+              <div className="form-field" key={field as string}>
                 <label className="label-title">
                   {label} {required && <span className="required">*</span>}
                 </label>
                 <input
-                  name={field}
+                  name={field as string}
                   value={(formData as any)[field]}
                   onChange={handleChange}
-                  className={errors[field] ? "error" : ""}
+                  className={errors[field as string] ? "error" : ""}
                 />
-                {errors[field] && <p className="error-text">{errors[field]}</p>}
+                {errors[field as string] && (
+                  <p className="error-text">{errors[field as string]}</p>
+                )}
               </div>
             ))}
           </div>
