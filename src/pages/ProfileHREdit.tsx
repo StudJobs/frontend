@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-edit-mospolyjob.css";
 import Header from "../components/layout/Header";
@@ -27,7 +28,9 @@ const normalizeTelegram = (value: string): string | undefined => {
   return username ? `@${username}` : undefined;
 };
 
-export default function ProfileEdit() {
+export default function ProfileHREdit() {
+  const navigate = useNavigate();
+
   const [photo, setPhoto] = useState<string>(avatarDefault);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarId, setAvatarId] = useState<string | null>(null);
@@ -46,6 +49,18 @@ export default function ProfileEdit() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("token") || "";
+    const role = localStorage.getItem("role") || "";
+
+    if (!token) {
+      navigate("/auth");
+      return;
+    }
+    if (role !== "ROLE_EMPLOYER") {
+      navigate("/profile");
+      return;
+    }
+
     (async () => {
       try {
         const raw = await apiGateway({ method: "GET", url: "/users/me" });
@@ -81,10 +96,10 @@ export default function ProfileEdit() {
           if (data.avatar_url) setPhoto(data.avatar_url);
         }
       } catch (e) {
-        console.error("Не удалось загрузить профиль для редактирования", e);
+        console.error("Не удалось загрузить профиль HR для редактирования", e);
       }
     })();
-  }, []);
+  }, [navigate]);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -204,15 +219,20 @@ export default function ProfileEdit() {
     try {
       setMessage("");
 
+      const tg = normalizeTelegram(formData.telegram);
+
       const payload: any = {
         first_name: formData.name.trim(),
         last_name: formData.surname.trim(),
         age: formData.age ? Number(formData.age) : undefined,
         email: formData.email.trim() || undefined,
-        telegram: normalizeTelegram(formData.telegram),
+        telegram: tg,
+        tg,
         profession_category: formData.profile || undefined,
         description: formData.description || undefined,
       };
+
+      if (avatarId) payload.avatar_id = avatarId;
 
       const resp = await apiGateway({
         method: "PATCH",
@@ -220,10 +240,12 @@ export default function ProfileEdit() {
         data: payload,
       });
 
-      console.log("Profile edit response:", resp);
+      console.log("HR Profile edit response:", resp);
       setMessage("Данные успешно обновлены!");
+
+      setTimeout(() => navigate("/hr-profile"), 300);
     } catch (err: any) {
-      console.error("Ошибка сохранения профиля:", err);
+      console.error("Ошибка сохранения профиля HR:", err);
       const backendMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
@@ -242,7 +264,7 @@ export default function ProfileEdit() {
       <Header />
 
       <section className="profile-edit-section">
-        <h2 className="edit-title">Редактирование профиля</h2>
+        <h2 className="edit-title">Редактирование профиля HR</h2>
 
         <form className="edit-form" onSubmit={handleSubmit}>
           <div className="photo-upload">
@@ -280,9 +302,7 @@ export default function ProfileEdit() {
                   onChange={handleChange}
                   className={errors[field] ? "error" : ""}
                 />
-                {errors[field] && (
-                  <p className="error-text">{errors[field]}</p>
-                )}
+                {errors[field] && <p className="error-text">{errors[field]}</p>}
               </div>
             ))}
           </div>
@@ -332,9 +352,7 @@ export default function ProfileEdit() {
                   </option>
                 ))}
               </select>
-              {errors.profile && (
-                <p className="error-text">{errors.profile}</p>
-              )}
+              {errors.profile && <p className="error-text">{errors.profile}</p>}
             </div>
           </div>
 

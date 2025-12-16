@@ -1,21 +1,35 @@
-/*Страница сырая, нет отсылок к бэку. Хочу добавить автоподстановку данных из бэка*/
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-hr-mospolyjob.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
-import avatar from "../assets/images/человек.png";
+import avatarFallback from "../assets/images/человек.png";
 import wave from "../assets/images/wave-white.png";
 import spiral from "../assets/images/spiral.png";
 import checkLong from "../assets/images/check-long.png";
 
-export default function ProfileHRFull() {
-  const [description, setDescription] = useState("");
+import { apiGateway } from "../api/apiGateway";
 
-  const handleLogout = () => {
-    alert("Вы вышли из аккаунта");
-    // позже добавить очистку токена и navigate("/auth")
-  };
+type UserProfile = {
+  first_name?: string;
+  last_name?: string;
+  age?: number;
+  email?: string;
+  telegram?: string;
+  tg?: string;
+  description?: string;
+  profession_category?: string;
+  specialization?: string;
+};
+
+const unwrap = (resp: any) => resp?.data ?? resp ?? {};
+
+export default function ProfileHRFull() {
+  const navigate = useNavigate();
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const vacancies = [
     { id: 1, title: "Вакансия 1", color: "red", decor: wave },
@@ -29,6 +43,67 @@ export default function ProfileHRFull() {
     { id: 3, title: "Компания 3", color: "red", decor: wave },
   ];
 
+  useEffect(() => {
+    const token = localStorage.getItem("token") || "";
+    const role = (localStorage.getItem("role") || "").trim();
+
+    const isHr =
+      role === "ROLE_EMPLOYER" || role === "ROLE_COMPANY" || role === "hr";
+
+    if (!token) {
+      navigate("/auth", { replace: true });
+      return;
+    }
+
+    if (!isHr) {
+      navigate("/profile", { replace: true });
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        setLoading(true);
+
+        const resp = await apiGateway({
+          method: "GET",
+          url: "/users/me",
+        });
+
+        const data: UserProfile = unwrap(resp);
+        setProfile(data);
+      } catch (e) {
+        console.error("Не удалось загрузить профиль HR:", e);
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        navigate("/auth", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    navigate("/auth", { replace: true });
+  };
+
+  const p = profile || {};
+  const fullName =
+    [p.last_name, p.first_name].filter(Boolean).join(" ") || "Профиль HR";
+
+  const hasDescription = !!p.description && p.description.trim().length > 0;
+
+  const tgRaw = (p.telegram || p.tg || "").trim();
+  const tgShown = tgRaw
+    ? tgRaw.startsWith("@")
+      ? tgRaw
+      : `@${tgRaw}`
+    : "";
+  const tgHandle = tgRaw ? tgRaw.replace("@", "") : "";
+
   return (
     <div className="page-frame">
       <Header />
@@ -36,50 +111,63 @@ export default function ProfileHRFull() {
       <section className="profile-section">
         <div className="profile-card">
           <div className="profile-photo">
-            <img src={avatar} alt="Фото HR" />
+            <img src={avatarFallback} alt="Фото HR" />
           </div>
 
           <div className="profile-info">
-            <h2 className="profile-name">Сидорова Анна Владимировна</h2>
+            <h2 className="profile-name">{loading ? "Загрузка..." : fullName}</h2>
 
             <ul className="profile-details-list">
-              <li>Возраст: 29 лет</li>
-              <li>Пол: Женский</li>
-              <li>Город: Москва</li>
-              <li>Должность: HR-менеджер</li>
-              <li>Опыт работы: 6 лет</li>
-              <li>Профиль: Кадровое управление</li>
-              <li>Уровень образования: Магистратура</li>
+              <li>Возраст: {typeof p.age === "number" ? `${p.age} лет` : "—"}</li>
+              <li>
+                Профиль: {p.profession_category || p.specialization || "—"}
+              </li>
             </ul>
 
             <div className="profile-contacts">
               <strong>Контакты:</strong>
               <ul className="profile-contacts-list">
-                <li>+7 (495) 444-11-22</li>
-                <li>anna.sidorova@techline.ru</li>
+                <li>Email: {p.email ? p.email : "не указан"}</li>
+                <li>
+                  Telegram:{" "}
+                  {tgRaw ? (
+                    <a
+                      href={`https://t.me/${tgHandle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {tgShown}
+                    </a>
+                  ) : (
+                    "не указан"
+                  )}
+                </li>
               </ul>
             </div>
+          </div>
+        </div>
 
-            <div className="profile-description">
-              <strong>О себе:</strong>
-              <p>
-                {description.trim()
-                  ? description
-                  : "Пользователь поленился оставить описание для профиля... В 1800-х годах, в те времена, когда не было еще ни железных, ни шоссейных дорог, ни газового, ни стеаринового света, ни пружинных низких диванов, ни мебели без лаку, ни разочарованных юношей со стеклышками, ни либеральных философов-женщин, ни милых дам-камелий, которых так много развелось в наше время, - в те наивные времена, когда из Москвы, выезжая в Петербург в повозке или карете, брали с собой целую кухню домашнего приготовления, ехали восемь суток по мягкой, пыльной или грязной дороге и верили в пожарские котлеты, в валдайские колокольчики и бублики, - когда в длинные осенние вечера нагорали сальные свечи, освещая семейные кружки из двадцати и тридцати человек, на балах в канделябры вставлялись восковые и спермацетовые свечи, когда мебель ставили симметрично, когда наши отцы были еще молоды не одним отсутствием морщин и седых волос, а стрелялись за женщин и из другого угла комнаты бросались поднимать нечаянно и не нечаянно уроненные платочки, наши матери носили коротенькие талии и огромные рукава и решали семейные дела выниманием билетиков, когда прелестные дамы-камелии прятались от дневного света, - в наивные времена масонских лож, мартинистов, тугендбунда, во времена Милорадовичей, Давыдовых, Пушкиных, - в губернском городе К. был съезд помещиков, и кончались дворянские выборы."}
-              </p>
-            </div>
+        <div className="profile-bottom-block">
+          <div className="profile-about">
+            <h2 className="profile-about-title">О себе:</h2>
+            <p>
+              {hasDescription
+                ? p.description
+                : "Пользователь пока не заполнил описание для профиля."}
+            </p>
           </div>
         </div>
 
         <div className="profile-buttons">
           <button className="profile-btn">Добавить вакансию</button>
           <button className="profile-btn">Добавить компанию</button>
-          <button className="profile-btn">Редактировать информацию</button>
-          <button onClick={() => {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("role");
-                  window.location.href = "/auth";
-                }}className="profile-btn logout-btn">
+          <button
+            className="profile-btn"
+            onClick={() => navigate("/hr-profile/edit")}
+          >
+            Редактировать информацию
+          </button>
+          <button onClick={handleLogout} className="profile-btn logout-btn">
             Выйти из аккаунта
           </button>
         </div>

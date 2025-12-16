@@ -31,7 +31,7 @@
   border: none;
   border-radius: 9999px;
   padding: clamp(12px, 1.5vw, 16px);
-  margin-bottom: 8px; /* небольшой отступ, остальное даёт ошибка */
+  margin-bottom: 8px;
   text-align: center;
   font-size: clamp(14px, 1.2vw, 18px);
 }
@@ -41,7 +41,6 @@
   opacity: 0.85;
 }
 
-/* ошибки под полями (как на регистрации) */
 .auth-field-error {
   width: 100%;
   max-width: 420px;
@@ -71,7 +70,7 @@
 }
 
 .auth-register {
-  margin-top: 0;        /* убираем лишний отступ сверху */
+  margin-top: 0;
   font-size: clamp(15px, 1.3vw, 18px);
 }
 
@@ -85,8 +84,6 @@
 .auth-register a:hover {
   color: #333;
 }
-
-/* общий блок ошибки от сервера под формой */
 
 .auth-error-placeholder {
   min-height: clamp(30px, 3vw, 40px);
@@ -105,8 +102,8 @@
 }
 
 .auth-forgot {
-  margin-top: 18px;     /* расстояние от кнопки до ссылки */
-  margin-bottom: 22px;  /* расстояние до блока регистрации */
+  margin-top: 18px;
+  margin-bottom: 22px;
   font-size: clamp(14px, 1.2vw, 17px);
 }
 

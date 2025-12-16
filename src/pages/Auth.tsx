@@ -1,12 +1,12 @@
-import { Link, useNavigate } from "react-router-dom";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/auth-mospolyjob.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { apiGateway } from "../api/apiGateway";
 
-type BackendRole = "ROLE_STUDENT" | "ROLE_DEVELOPER" | "ROLE_HR" | "ROLE_COMPANY";
+type BackendRole = "ROLE_STUDENT" | "ROLE_EMPLOYER" | "ROLE_COMPANY";
 
 type FieldErrors = {
   email: string;
@@ -19,19 +19,28 @@ const getRoleForEmail = (email: string): BackendRole => {
     const raw = localStorage.getItem("userRoles");
     if (raw) {
       const map: Record<string, BackendRole> = JSON.parse(raw);
-      if (map[normalized]) {
-        return map[normalized];
-      }
+      if (map[normalized]) return map[normalized];
     }
   } catch (e) {
     console.error("Не удалось получить роль для email", e);
   }
-  // дефолт, если ничего не знаем про пользователя
   return "ROLE_STUDENT";
 };
 
+const pickAuthData = (resp: any) => {
+  const data = resp?.data ?? resp ?? {};
+
+  const token =
+    data?.token || data?.access_token || data?.accessToken || data?.jwt || "";
+
+  const role: BackendRole | undefined =
+    data?.role || data?.user?.role || data?.data?.role;
+
+  return { data, token, role };
+};
+
 export default function Auth() {
-  const navigate = useNavigate();
+  useNavigate();
 
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -41,22 +50,18 @@ export default function Auth() {
     password: "",
   });
 
-  // общий текст ошибки от сервера
   const [error, setError] = useState("");
 
-  // если пользователь уже авторизован — не пускаем на страницу авторизации
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const storedRole = localStorage.getItem("role") as BackendRole | null;
+    const storedRole = (localStorage.getItem("role") || "").trim() as BackendRole;
 
-    if (storedRole === "ROLE_HR" || storedRole === "ROLE_COMPANY") {
-      navigate("/hr-profile", { replace: true });
-    } else {
-      navigate("/profile", { replace: true });
-    }
-  }, [navigate]);
+    setRedirectTo(storedRole === "ROLE_EMPLOYER" ? "/hr-profile" : "/profile");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +75,6 @@ export default function Auth() {
     let hasError = false;
     const newErrors: FieldErrors = { email: "", password: "" };
 
-    // email
     if (!trimmedEmail) {
       newErrors.email = "Введите email.";
       hasError = true;
@@ -82,7 +86,6 @@ export default function Auth() {
       }
     }
 
-    // пароль
     if (!trimmedPassword) {
       newErrors.password = "Введите пароль.";
       hasError = true;
@@ -98,60 +101,57 @@ export default function Auth() {
 
     try {
       const email = trimmedEmail.toLowerCase();
-      const role = getRoleForEmail(email);
+      const guessedRole = getRoleForEmail(email);
 
       const payload = {
         email,
         password: trimmedPassword,
-        role,
+        role: guessedRole,
       };
 
       console.log("Login payload:", payload);
 
-      const response = await apiGateway({
+      const resp = await apiGateway({
         method: "POST",
         url: "/auth/login",
         data: payload,
       });
 
-      console.log("Авторизация успешна:", response);
+      const { data, token, role } = pickAuthData(resp);
+      console.log("Авторизация успешна:", data);
 
-      if (response?.token) {
-        localStorage.setItem("token", response.token);
-      }
+      if (!token) throw new Error("Сервер не вернул token");
 
-      const responseRole: BackendRole | undefined = response?.role;
-      const finalRole: BackendRole = responseRole || role;
+      localStorage.setItem("token", token);
 
+      const finalRole: BackendRole = ((role || guessedRole) as BackendRole);
       localStorage.setItem("role", finalRole);
 
-      // простая маршрутизация по роли
-      if (finalRole === "ROLE_HR" || finalRole === "ROLE_COMPANY") {
-        navigate("/hr-profile");
-      } else {
-        navigate("/profile");
-      }
+      setRedirectTo(finalRole === "ROLE_EMPLOYER" ? "/hr-profile" : "/profile");
     } catch (err: any) {
       console.error("Ошибка авторизации:", err);
 
       let msg = "Ошибка при авторизации. Проверьте данные.";
 
-      if (err && typeof err === "object") {
-        const raw = (err.message || (err as any).detail || "").toString();
+      const raw =
+        String(
+          err?.response?.data?.message ||
+            err?.response?.data?.detail ||
+            err?.detail ||
+            err?.message ||
+            ""
+        ) || "";
 
-        // маппим бекендовый текст на русский
-        if (/invalid email or password/i.test(raw)) {
-          msg = "Неверный email или пароль.";
-        } else if (raw) {
-          msg = raw;
-        }
-      } else if (typeof err === "string") {
-        msg = err;
-      }
+      if (/invalid email or password/i.test(raw)) msg = "Неверный email или пароль.";
+      else if (raw) msg = raw;
 
       setError(msg);
     }
   };
+
+  if (redirectTo) {
+    return <Navigate to={redirectTo} replace />;
+  }
 
   return (
     <div className="page-frame">

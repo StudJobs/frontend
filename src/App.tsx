@@ -6,6 +6,7 @@ import ProfileHRFull from "./pages/ProfileHRFull";
 import ProfileEdit from "./pages/ProfileEdit";
 import AuthOrRegister from "./pages/AuthOrRegister";
 import PrivateRoute from "./components/PrivateRoute";
+import ProfileHREdit from "./pages/ProfileHREdit";
 
 export default function App() {
   return (
@@ -15,32 +16,37 @@ export default function App() {
 
         <Route path="/auth" element={<AuthOrRegister />} />
 
-        {/* Личный кабинет студента / разработчика */}
         <Route
           path="/profile"
           element={
-            <PrivateRoute allowedRoles={["ROLE_STUDENT", "ROLE_DEVELOPER"]}>
+            <PrivateRoute allowedRoles={["ROLE_STUDENT"]}>
               <Profile />
             </PrivateRoute>
           }
         />
 
-        {/* Редактирование профиля студента / разработчика */}
         <Route
           path="/profile/edit"
           element={
-            <PrivateRoute allowedRoles={["ROLE_STUDENT", "ROLE_DEVELOPER"]}>
+            <PrivateRoute allowedRoles={["ROLE_STUDENT"]}>
               <ProfileEdit />
             </PrivateRoute>
           }
         />
 
-        {/* Кабинет HR / компании */}
         <Route
           path="/hr-profile"
           element={
-            <PrivateRoute allowedRoles={["ROLE_HR", "ROLE_COMPANY"]}>
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER"]}>
               <ProfileHRFull />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/hr-profile/edit"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER"]}>
+              <ProfileHREdit />
             </PrivateRoute>
           }
         />

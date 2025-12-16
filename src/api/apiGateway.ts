@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export interface ApiRequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   url: string;
   data?: any;
   params?: any;
@@ -29,7 +29,6 @@ export async function apiGateway<T = any>(
       data,
       params,
       headers: {
-        "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },

@@ -6,8 +6,8 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { apiGateway } from "../api/apiGateway";
 
-type BackendRole = "ROLE_STUDENT" | "ROLE_HR" | "ROLE_COMPANY";
-type UiRole = "candidate" | "hr" | "company";
+type BackendRole = "ROLE_STUDENT" | "ROLE_EMPLOYER";
+type UiRole = "candidate" | "hr";
 
 type FieldErrors = {
   email: string;
@@ -54,14 +54,13 @@ export default function Register() {
     type: "",
   });
 
-  // если пользователь уже авторизован — не пускаем на регистрацию
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
     const storedRole = localStorage.getItem("role") as BackendRole | null;
 
-    if (storedRole === "ROLE_HR" || storedRole === "ROLE_COMPANY") {
+    if (storedRole === "ROLE_EMPLOYER") {
       navigate("/hr-profile", { replace: true });
     } else {
       navigate("/profile", { replace: true });
@@ -71,7 +70,6 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // сбрасываем прошлые ошибки
     setFieldErrors({
       email: "",
       password: "",
@@ -94,7 +92,6 @@ export default function Register() {
       agree: "",
     };
 
-    // валидация email
     if (!trimmedEmail) {
       newErrors.email = "Введите email.";
       hasError = true;
@@ -106,7 +103,6 @@ export default function Register() {
       }
     }
 
-    // валидация пароля
     if (!trimmedPassword) {
       newErrors.password = "Введите пароль.";
       hasError = true;
@@ -115,7 +111,6 @@ export default function Register() {
       hasError = true;
     }
 
-    // валидация подтверждения
     if (!trimmedConfirm) {
       newErrors.confirm = "Подтвердите пароль.";
       hasError = true;
@@ -124,13 +119,11 @@ export default function Register() {
       hasError = true;
     }
 
-    // роль
     if (!selectedRole) {
       newErrors.role = "Выберите вашу роль.";
       hasError = true;
     }
 
-    // согласие с политикой
     if (!agree) {
       newErrors.agree =
         "Необходимо согласиться с политикой конфиденциальности.";
@@ -142,21 +135,8 @@ export default function Register() {
       return;
     }
 
-    // Маппинг роли из UI в роль, которую ждёт бэкенд
-    let backendRole: BackendRole;
-    switch (selectedRole) {
-      case "candidate":
-        backendRole = "ROLE_STUDENT";
-        break;
-      case "hr":
-        backendRole = "ROLE_HR";
-        break;
-      case "company":
-        backendRole = "ROLE_COMPANY";
-        break;
-      default:
-        backendRole = "ROLE_STUDENT";
-    }
+    const backendRole: BackendRole =
+      selectedRole === "hr" ? "ROLE_EMPLOYER" : "ROLE_STUDENT";
 
     try {
       const email = trimmedEmail.toLowerCase();
@@ -246,7 +226,6 @@ export default function Register() {
             <p className="register-field-error">{fieldErrors.confirm}</p>
           )}
 
-          {/* Три роли: кандидат / HR / компания */}
           <div className="register-roles">
             <label className="register-role">
               <input
@@ -269,28 +248,14 @@ export default function Register() {
                 onChange={() => setSelectedRole("hr")}
               />
               <div className="register-role-text">
-                <span className="register-role-title">HR</span>
+                <span className="register-role-title">Работодатель</span>
                 <span className="register-role-subtitle">
-                  (я ищу сотрудников, физ. лицо)
-                </span>
-              </div>
-            </label>
-
-            <label className="register-role">
-              <input
-                type="checkbox"
-                className="register-role-input"
-                checked={selectedRole === "company"}
-                onChange={() => setSelectedRole("company")}
-              />
-              <div className="register-role-text">
-                <span className="register-role-title">Компания</span>
-                <span className="register-role-subtitle">
-                  (я ищу сотрудников, юр. лицо)
+                  (я ищу сотрудников)
                 </span>
               </div>
             </label>
           </div>
+
           {fieldErrors.role && (
             <p className="register-field-error">{fieldErrors.role}</p>
           )}
@@ -306,6 +271,7 @@ export default function Register() {
               политикой конфиденциальности
             </a>
           </label>
+
           {fieldErrors.agree && (
             <p className="register-field-error">{fieldErrors.agree}</p>
           )}

@@ -7,13 +7,16 @@ import person from "../../assets/images/человек.png";
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
   const handleProfileClick = () => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
+    const isHr =
+      role === "hr" || role === "ROLE_EMPLOYER" || role === "ROLE_COMPANY";
+
     if (token && role) {
-      if (role === "hr") navigate("/hr-profile");
-      else navigate("/profile");
+      navigate(isHr ? "/hr-profile" : "/profile");
     } else {
       navigate("/auth");
     }
@@ -42,6 +45,7 @@ const Header: React.FC = () => {
         >
           Главная
         </NavLink>
+
         <NavLink
           to="/404"
           className={({ isActive }) =>
@@ -50,6 +54,7 @@ const Header: React.FC = () => {
         >
           О нас
         </NavLink>
+
         <NavLink
           to="/404"
           className={({ isActive }) =>
@@ -58,7 +63,12 @@ const Header: React.FC = () => {
         >
           Контактная информация
         </NavLink>
-        <span className="mj-profile" onClick={handleProfileClick} style={{ cursor: "pointer" }}>
+
+        <span
+          className="mj-profile"
+          onClick={handleProfileClick}
+          style={{ cursor: "pointer" }}
+        >
           <img src={person} alt="Профиль" />
         </span>
       </nav>
