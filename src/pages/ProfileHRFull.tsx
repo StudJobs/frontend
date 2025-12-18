@@ -139,10 +139,7 @@ async function authFetchJson<T = any>(
 
 async function fetchCompaniesStrict(): Promise<CompanyItem[]> {
   const urls = [
-    `/api/v1/company/me`,
     `/api/v1/company`,
-    `/api/v1/companies/me`,
-    `/api/v1/companies`,
   ];
 
   let lastErr: any = null;
@@ -646,7 +643,7 @@ export default function ProfileHRFull() {
     const role = (localStorage.getItem("role") || "").trim();
 
     const isHr =
-      role === "ROLE_EMPLOYER" || role === "ROLE_COMPANY" || role === "hr";
+      role === "ROLE_EMPLOYER" || role === "hr";
 
     if (!token) {
       navigate("/auth", { replace: true });
@@ -667,7 +664,7 @@ export default function ProfileHRFull() {
 
         const resp = await apiGateway({
           method: "GET",
-          url: "/users/me",
+          url: "/hr/me",
         });
 
         const data: UserProfile = unwrap(resp);
@@ -681,7 +678,7 @@ export default function ProfileHRFull() {
           else if (data?.avatar_url) setAvatarUrl(data.avatar_url);
           else setAvatarUrl(null);
         } catch (err) {
-          console.warn("Не удалось получить аватар из achievements:", err);
+          console.warn("Не удалось получить аватар:", err);
           setAvatarUrl(data?.avatar_url || null);
         }
 
@@ -855,7 +852,7 @@ export default function ProfileHRFull() {
 
     const companyId = (vacancyCompanyId || "").trim();
     if (!companyId) {
-      setVacancyErr("Выбери компанию (company_id должен быть из БД).");
+      setVacancyErr("Выбери компанию.");
       return;
     }
 
@@ -951,7 +948,7 @@ export default function ProfileHRFull() {
     ).trim();
     if (!companyIdFromDb) {
       setVacancyEditErr(
-        "company_id отсутствует. Нельзя обновить (должен приходить из БД)."
+        "company_id отсутствует. Нельзя обновить."
       );
       return;
     }
@@ -1472,7 +1469,7 @@ export default function ProfileHRFull() {
               <div className="mj-modal-header">
                 <div>
                   <h2 className="mj-modal-title">Создание компании</h2>
-                  <p className="mj-modal-subtitle">Сначала компания, потом вакансия — чтобы company_id был из БД</p>
+                  <p className="mj-modal-subtitle"></p>
                 </div>
                 <button className="mj-btn mj-btn--ghost" type="button" onClick={closeCompanyModal}>
                   Закрыть
@@ -1596,7 +1593,7 @@ export default function ProfileHRFull() {
               <div className="mj-modal-header">
                 <div>
                   <h2 className="mj-modal-title">Создание вакансии</h2>
-                  <p className="mj-modal-subtitle">company_id обязателен и должен быть из БД</p>
+                  <p className="mj-modal-subtitle"></p>
                 </div>
                 <button className="mj-btn mj-btn--ghost" type="button" onClick={closeVacancyModal}>
                   Закрыть
@@ -1623,7 +1620,7 @@ export default function ProfileHRFull() {
 
                   {companies.length === 0 ? (
                     <div className="mj-note">
-                      Нет компаний — сначала создай компанию, потом вакансию (company_id должен быть из БД).
+                      Нет компаний — сначала создай компанию, потом вакансию.
                     </div>
                   ) : null}
                 </div>

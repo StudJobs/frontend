@@ -1,0 +1,155 @@
+.mj-list-wrap{
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 18px 40px;
+}
+
+.mj-list-title{
+  font-family: "Gilroy", system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-weight: 700;
+  font-size: 44px;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  margin: 10px 0 18px;
+}
+
+.mj-filters{
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 18px;
+}
+
+.mj-filter-field label{
+  display: block;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.mj-filter-field input{
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  padding: 0 12px;
+  outline: none;
+}
+
+.mj-filter-btn{
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease;
+}
+
+.mj-filter-btn:hover{ background: rgba(255,255,255,0.16); }
+.mj-filter-btn:active{ transform: translateY(1px); }
+
+.mj-list-meta{
+  display:flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0 14px;
+  color: rgba(255,255,255,0.75);
+  font-size: 14px;
+}
+
+.mj-pagination{
+  display:flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.mj-pagination button{
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.22);
+  color:#fff;
+  cursor:pointer;
+}
+
+.mj-pagination button:disabled{
+  opacity: .45;
+  cursor: default;
+}
+
+.mj-cards-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mj-candidate-card{
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.mj-candidate-top{
+  display:flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mj-candidate-avatar{
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: rgba(0,0,0,0.2);
+}
+
+.mj-candidate-name{
+  color:#fff;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.mj-candidate-sub{
+  color: rgba(255,255,255,0.72);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.mj-candidate-desc{
+  color: rgba(255,255,255,0.85);
+  font-size: 14px;
+  line-height: 1.35;
+  margin: 10px 0 12px;
+}
+
+.mj-candidate-links{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mj-candidate-links a{
+  color: rgba(255,255,255,0.9);
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+@media (max-width: 900px){
+  .mj-filters{ grid-template-columns: 1fr 1fr; }
+  .mj-cards-grid{ grid-template-columns: 1fr; }
+}

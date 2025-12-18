@@ -428,3 +428,44 @@
   color: #1a7f37;
   border: 1px solid rgba(26, 127, 55, 0.16);
 }
+.local-docs-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.local-doc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.local-doc-name {
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.local-doc-name:hover {
+  opacity: 0.85;
+}
+
+.local-doc-size {
+  color: #888;
+  font-size: 13px;
+}
+
+.local-doc-remove {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #000;
+}
+
+.local-doc-remove:hover {
+  color: #d00000;
+}

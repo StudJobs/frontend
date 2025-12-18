@@ -107,7 +107,7 @@ const AchievementsBlock = forwardRef<
       {error && <p className="profile-error">{error}</p>}
 
       {!loading && items.length === 0 && (
-        <p>Достижения ещё не добавлены.</p>
+        <p></p>
       )}
 
       {items.length > 0 && (

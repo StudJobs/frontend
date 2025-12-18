@@ -14,11 +14,32 @@ export default defineConfig({
 
   server: {
     port: 5173,
-
-    // *** Главное — прокси API ***
     proxy: {
+      // API
       "/api": {
-        target: "http://127.0.0.1:8000", // API Gateway backend
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+
+      // Files / static from backend (чтобы <img src="/files/..."> и ссылки на документы работали)
+      "/files": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/uploads": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/avatars": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/logos": {
+        target: "http://127.0.0.1:8000",
         changeOrigin: true,
         secure: false,
       },

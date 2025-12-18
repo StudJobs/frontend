@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-edit-mospolyjob.css";
 import Header from "../components/layout/Header";
@@ -28,6 +29,8 @@ const normalizeTelegram = (value: string): string | undefined => {
 };
 
 export default function ProfileEdit() {
+  const navigate = useNavigate();
+
   const [photo, setPhoto] = useState<string>(avatarDefault);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarId, setAvatarId] = useState<string | null>(null);
@@ -77,7 +80,7 @@ export default function ProfileEdit() {
             setPhoto(data.avatar_url);
           }
         } catch (err) {
-          console.warn("Не удалось получить аватар из достижений:", err);
+          console.warn("Не удалось получить аватар:", err);
           if (data.avatar_url) setPhoto(data.avatar_url);
         }
       } catch (e) {
@@ -222,6 +225,8 @@ export default function ProfileEdit() {
 
       console.log("Profile edit response:", resp);
       setMessage("Данные успешно обновлены!");
+
+      setTimeout(() => navigate("/profile"), 300);
     } catch (err: any) {
       console.error("Ошибка сохранения профиля:", err);
       const backendMsg =

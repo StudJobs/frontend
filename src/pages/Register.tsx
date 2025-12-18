@@ -6,8 +6,8 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { apiGateway } from "../api/apiGateway";
 
-type BackendRole = "ROLE_STUDENT" | "ROLE_EMPLOYER";
-type UiRole = "candidate" | "hr";
+type BackendRole = "ROLE_STUDENT" | "ROLE_EMPLOYER" | "ROLE_COMPANY_OWNER";
+type UiRole = "candidate" | "hr" | "company";
 
 type FieldErrors = {
   email: string;
@@ -62,6 +62,8 @@ export default function Register() {
 
     if (storedRole === "ROLE_EMPLOYER") {
       navigate("/hr-profile", { replace: true });
+    } else if (storedRole === "ROLE_COMPANY_OWNER") {
+      navigate("/company-profile", { replace: true });
     } else {
       navigate("/profile", { replace: true });
     }
@@ -136,7 +138,11 @@ export default function Register() {
     }
 
     const backendRole: BackendRole =
-      selectedRole === "hr" ? "ROLE_EMPLOYER" : "ROLE_STUDENT";
+      selectedRole === "hr"
+        ? "ROLE_EMPLOYER"
+        : selectedRole === "company"
+        ? "ROLE_COMPANY_OWNER"
+        : "ROLE_STUDENT";
 
     try {
       const email = trimmedEmail.toLowerCase();
@@ -176,6 +182,8 @@ export default function Register() {
         msg = err.message;
       } else if (err?.detail) {
         msg = err.detail;
+      } else if (err?.response?.data?.message) {
+        msg = err.response.data.message;
       }
 
       setMessage({
@@ -251,6 +259,21 @@ export default function Register() {
                 <span className="register-role-title">Работодатель</span>
                 <span className="register-role-subtitle">
                   (я ищу сотрудников)
+                </span>
+              </div>
+            </label>
+
+            <label className="register-role">
+              <input
+                type="checkbox"
+                className="register-role-input"
+                checked={selectedRole === "company"}
+                onChange={() => setSelectedRole("company")}
+              />
+              <div className="register-role-text">
+                <span className="register-role-title">Компания</span>
+                <span className="register-role-subtitle">
+                  (владелец компании)
                 </span>
               </div>
             </label>
