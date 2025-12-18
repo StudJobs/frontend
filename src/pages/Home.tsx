@@ -31,7 +31,7 @@ export default function Home() {
                 <img src="/src/assets/images/wave-white.png" alt="" />
               </div>
               <h3>Вакансии</h3>
-              <a className="mj-card-link" href="#">Посмотреть</a>
+              <Link className="mj-card-link" to="/vacancies">Посмотреть</Link>
             </article>
 
             <article className="mj-card mj-card--green">

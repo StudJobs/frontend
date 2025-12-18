@@ -95,3 +95,12 @@
   top: 0;
   left: 0;
 }
+.mj-card-decor,
+.mj-card-decor img {
+  pointer-events: none;
+}
+
+.mj-card-link {
+  position: relative;
+  z-index: 2;
+}

@@ -31,13 +31,41 @@ const API_BASE =
 const AVATAR_PREFIX = "user_avatar_";
 const RESUME_PREFIX = "user_resume_";
 
-type ResumeInfo =
-  | {
-      id: string;
-      name: string;
-      url: string;
-    }
-  | null;
+const isImageExt = (s: string) => {
+  const v = (s || "").toLowerCase();
+  return (
+    v.endsWith(".png") ||
+    v.endsWith(".jpg") ||
+    v.endsWith(".jpeg") ||
+    v.endsWith(".webp") ||
+    v.endsWith(".gif") ||
+    v.endsWith(".svg") ||
+    v.endsWith(".bmp") ||
+    v.endsWith(".ico")
+  );
+};
+
+const isImageFile = (it: AchievementItem) => {
+  const fileName = (it.file_name || it.name || "").toLowerCase();
+  if (isImageExt(fileName)) return true;
+
+  const url = (it.url || "").toLowerCase();
+  return (
+    url.includes(".png") ||
+    url.includes(".jpg") ||
+    url.includes(".jpeg") ||
+    url.includes(".webp") ||
+    url.includes(".gif") ||
+    url.includes(".svg") ||
+    url.includes(".bmp") ||
+    url.includes(".ico")
+  );
+};
+
+const niceName = (it: AchievementItem) => {
+  const raw = it.file_name || it.name || "Файл";
+  return raw.replace(AVATAR_PREFIX, "").replace(RESUME_PREFIX, "");
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -46,7 +74,9 @@ export default function Profile() {
   const [error, setError] = useState<string>("");
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [resume, setResume] = useState<ResumeInfo>(null);
+
+  const [docs, setDocs] = useState<AchievementItem[]>([]);
+
   const [resumeUploading, setResumeUploading] = useState(false);
   const [resumeError, setResumeError] = useState<string>("");
 
@@ -90,38 +120,18 @@ export default function Profile() {
     );
   };
 
-  const isResume = (it: AchievementItem) => {
-    const id = it.id || "";
-    const n = it.name || "";
-    const fn = it.file_name || "";
-    return (
-      id.startsWith(RESUME_PREFIX) ||
-      n.startsWith(RESUME_PREFIX) ||
-      fn.startsWith(RESUME_PREFIX)
-    );
-  };
-
   const loadFilesFromAchievements = async () => {
     try {
       const list: AchievementItem[] = await AchievementsAPI.list();
 
       const avatarItem = list.find(isAvatar);
-      if (avatarItem?.url) setAvatarUrl(avatarItem.url);
+      setAvatarUrl(avatarItem?.url || null);
 
-      const resumeItem = list.find(isResume);
-      if (resumeItem?.url) {
-        const rawName = resumeItem.file_name || resumeItem.name || "Резюме";
-        const niceName = rawName.replace(RESUME_PREFIX, "");
-        setResume({
-          id: resumeItem.id,
-          name: niceName || "Резюме",
-          url: resumeItem.url,
-        });
-      } else {
-        setResume(null);
-      }
+      const nonImages = list.filter((it) => !isAvatar(it) && !isImageFile(it));
+
+      setDocs(nonImages);
     } catch (e) {
-      console.error("Ошибка загрузки аватара/резюме из achievements:", e);
+      console.error("Ошибка загрузки файлов из achievements:", e);
     }
   };
 
@@ -179,16 +189,14 @@ export default function Profile() {
     }
   };
 
-  const handleResumeDelete = async () => {
-    if (!resume?.id) return;
-
+  const handleDocDelete = async (id: string) => {
     try {
       setResumeError("");
-      await AchievementsAPI.remove(resume.id);
-      setResume(null);
+      await AchievementsAPI.remove(id);
+      await loadFilesFromAchievements();
     } catch (err) {
-      console.error("Ошибка удаления резюме (achievement):", err);
-      setResumeError("Не удалось удалить резюме. Попробуйте позже.");
+      console.error("Ошибка удаления файла (achievement):", err);
+      setResumeError("Не удалось удалить файл. Попробуйте позже.");
     }
   };
 
@@ -276,29 +284,33 @@ export default function Profile() {
                 <h2>Список достижений и резюме:</h2>
 
                 <div className="profile-resume-block">
-                  <p>Резюме:</p>
 
-                  {resume ? (
-                    <div className="resume-row">
-                      <a
-                        href={resume.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="resume-link"
-                      >
-                        {resume.name}
-                      </a>
-                      <button
-                        type="button"
-                        className="resume-delete-btn"
-                        onClick={handleResumeDelete}
-                        aria-label="Удалить резюме"
-                      >
-                        ✕
-                      </button>
+                  {docs.length ? (
+                    <div className="resume-list">
+                      {docs.map((it) => (
+                        <div className="resume-row" key={it.id}>
+                          <a
+                            href={it.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="resume-link"
+                          >
+                            {niceName(it)}
+                          </a>
+
+                          <button
+                            type="button"
+                            className="resume-delete-btn"
+                            onClick={() => handleDocDelete(it.id)}
+                            aria-label="Удалить файл"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <p>Резюме не загружено.</p>
+                    <p>Файлов пока нет.</p>
                   )}
 
                   <input
@@ -329,14 +341,7 @@ export default function Profile() {
                 onClick={handleResumeButtonClick}
                 disabled={resumeUploading}
               >
-                {resumeUploading ? "Загружаем резюме..." : "Загрузить резюме"}
-              </button>
-
-              <button
-                className="profile-btn"
-                onClick={() => achievementsRef.current?.openFileDialog()}
-              >
-                Добавить достижения
+                {resumeUploading ? "Загружаем..." : "Добавить резюме или достижение"}
               </button>
 
               <button className="profile-btn logout-btn" onClick={handleLogout}>

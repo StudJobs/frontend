@@ -7,6 +7,9 @@ import ProfileEdit from "./pages/ProfileEdit";
 import AuthOrRegister from "./pages/AuthOrRegister";
 import PrivateRoute from "./components/PrivateRoute";
 import ProfileHREdit from "./pages/ProfileHREdit";
+import Vacancies from "./pages/Vacancies";
+import CompanyProfileEdit from "./pages/CompanyProfileEdit";
+import CompanyProfile from "./pages/CompanyProfile";
 
 export default function App() {
   return (
@@ -47,6 +50,33 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ROLE_EMPLOYER"]}>
               <ProfileHREdit />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/vacancies"
+          element={
+            <PrivateRoute>
+              <Vacancies />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company-profile"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_COMPANY_OWNER"]}>
+              <CompanyProfile />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company-profile/edit"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_COMPANY_OWNER"]}>
+              <CompanyProfileEdit />
             </PrivateRoute>
           }
         />

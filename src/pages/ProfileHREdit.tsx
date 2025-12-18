@@ -67,7 +67,7 @@ export default function ProfileHREdit() {
 
     (async () => {
       try {
-        const raw = await apiGateway({ method: "GET", url: "/users/me" });
+        const raw = await apiGateway({ method: "GET", url: "/hr/me" });
         const data = (raw as any)?.data ?? raw ?? {};
 
         setFormData((prev) => ({
@@ -97,7 +97,7 @@ export default function ProfileHREdit() {
             setPhoto(data.avatar_url);
           }
         } catch (err) {
-          console.warn("Не удалось получить аватар из достижений:", err);
+          console.warn("Не удалось получить аватар:", err);
           if (data.avatar_url) setPhoto(data.avatar_url);
         }
       } catch (e) {
@@ -242,7 +242,7 @@ export default function ProfileHREdit() {
 
       const resp = await apiGateway({
         method: "PATCH",
-        url: "/users/edit",
+        url: "/hr/edit",
         data: payload,
       });
 

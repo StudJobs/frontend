@@ -34,30 +34,19 @@ export const AchievementsAPI = {
     const result: AchievementItem[] = [];
 
     for (const item of rawList) {
-      const name: string = String(
-        item.name ?? item.file_name ?? item.id ?? ""
-      );
-      const fileName: string = String(
-        item.file_name ?? item.fileName ?? name
-      );
+      const id: string = String(item.id ?? item.name ?? item.file_name ?? "");
+      const name: string = String(item.name ?? item.file_name ?? id);
+      const fileName: string = String(item.file_name ?? item.fileName ?? name);
 
-      if (!name && !fileName) continue;
+      if (!id) continue;
 
-      if (
-        hideSystem &&
-        (isSystemFileName(name) || isSystemFileName(fileName))
-      ) {
+      if (hideSystem && (isSystemFileName(name) || isSystemFileName(fileName))) {
         continue;
       }
 
-      if (
-        excludeFileNames.includes(name) ||
-        excludeFileNames.includes(fileName)
-      ) {
+      if (excludeFileNames.includes(name) || excludeFileNames.includes(fileName)) {
         continue;
       }
-
-      const id = name;
 
       let url = "";
       try {
@@ -74,11 +63,7 @@ export const AchievementsAPI = {
           dlData.link ??
           "";
       } catch (e) {
-        console.warn(
-          "Не удалось получить download_url для достижения",
-          id,
-          e
-        );
+        console.warn("Не удалось получить download_url для достижения", id, e);
       }
 
       result.push({
@@ -108,11 +93,11 @@ export const AchievementsAPI = {
 
     const root = unwrap(metaResp) || {};
     const meta = (root as any).meta ?? root;
-    const uploadInfo =
-      (root as any).upload_url ?? (root as any).uploadUrl ?? {};
+    const uploadInfo = (root as any).upload_url ?? (root as any).uploadUrl ?? {};
 
     const id: string = String(
-      (meta as any).name ??
+      (meta as any).id ??
+        (meta as any).name ??
         (meta as any).file_name ??
         (meta as any).fileName ??
         name
@@ -132,15 +117,8 @@ export const AchievementsAPI = {
         ""
     );
 
-    if (!uploadUrl) {
-      console.error("Не пришёл upload_url для достижения", root);
-      throw new Error("upload_url is missing");
-    }
-
-    if (!s3Key) {
-      console.error("Не пришёл s3_key для достижения", root);
-      throw new Error("s3_key is missing");
-    }
+    if (!uploadUrl) throw new Error("upload_url is missing");
+    if (!s3Key) throw new Error("s3_key is missing");
 
     await fetch(uploadUrl, {
       method: "PUT",
