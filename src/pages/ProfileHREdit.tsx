@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-edit-mospolyjob.css";
@@ -7,6 +7,19 @@ import Footer from "../components/layout/Footer";
 import avatarDefault from "../assets/images/человек.png";
 import { apiGateway } from "../api/apiGateway";
 import { AchievementsAPI } from "../api/achievements";
+
+type CompanyType = { value?: string };
+
+type CompanyDTO = {
+  id?: string;
+  name?: string;
+  city?: string;
+  site?: string;
+  description?: string;
+  logo_url?: string;
+  logo_id?: string;
+  type?: CompanyType;
+};
 
 const extractAvatarUrl = (fileInfo: any): string | undefined =>
   fileInfo?.download_url || fileInfo?.direct_url || fileInfo?.url;
@@ -18,6 +31,8 @@ const AVATAR_PREFIX = "user_avatar_";
 const hasAvatarPrefix = (v?: string | null) =>
   !!v && String(v).startsWith(AVATAR_PREFIX);
 
+const isStr = (v: any) => typeof v === "string" && v.trim().length > 0;
+
 const normalizeTelegram = (value: string): string | undefined => {
   const v = (value || "").trim();
   if (!v) return undefined;
@@ -27,6 +42,306 @@ const normalizeTelegram = (value: string): string | undefined => {
 
   return username ? `@${username}` : undefined;
 };
+
+const safeJsonParse = <T,>(raw: string | null, fallback: T): T => {
+  try {
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const hrCompaniesKey = (hrId: string) => `hr_companies_${hrId}`;
+
+const COMPANY_LIST_ENDPOINT = "/companies";
+
+async function fetchCompanyById(id: string): Promise<CompanyDTO | null> {
+  try {
+    const resp = await apiGateway({ method: "GET", url: `/company/${id}` });
+    const data: any = (resp as any)?.data ?? resp ?? null;
+    return data as CompanyDTO;
+  } catch {
+    return null;
+  }
+}
+
+async function searchCompanies(query: string): Promise<CompanyDTO[]> {
+  const q = query.trim();
+
+  try {
+    const resp = await apiGateway({
+      method: "GET",
+      url: COMPANY_LIST_ENDPOINT,
+      params: q ? ({ q } as any) : undefined,
+    });
+    const data: any = (resp as any)?.data ?? resp ?? {};
+    const arr =
+      Array.isArray(data) ? data :
+      Array.isArray(data?.items) ? data.items :
+      Array.isArray(data?.companies) ? data.companies :
+      Array.isArray(data?.results) ? data.results :
+      [];
+    if (Array.isArray(arr)) return arr as CompanyDTO[];
+  } catch {
+  }
+
+  try {
+    const resp = await apiGateway({
+      method: "GET",
+      url: "/company",
+      params: q ? ({ q } as any) : undefined,
+    });
+    const data: any = (resp as any)?.data ?? resp ?? {};
+    const arr =
+      Array.isArray(data) ? data :
+      Array.isArray(data?.items) ? data.items :
+      Array.isArray(data?.companies) ? data.companies :
+      Array.isArray(data?.results) ? data.results :
+      [];
+    if (Array.isArray(arr)) return arr as CompanyDTO[];
+  } catch {
+  }
+
+  return [];
+}
+
+function CompanyCarousel({
+  items,
+  onRemove,
+  title,
+}: {
+  title: string;
+  items: CompanyDTO[];
+  onRemove: (companyId: string) => void;
+}) {
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ fontWeight: 700, marginBottom: 10 }}>{title}</div>
+
+      {items.length === 0 ? (
+        <div style={{ opacity: 0.7 }}>—</div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            gap: 14,
+            overflowX: "auto",
+            paddingBottom: 8,
+          }}
+        >
+          {items.map((c) => {
+            const id = String(c.id || "");
+            return (
+              <div
+                key={id}
+                style={{
+                  minWidth: 260,
+                  maxWidth: 260,
+                  borderRadius: 18,
+                  background: "#fff",
+                  boxShadow: "0 6px 22px rgba(0,0,0,0.08)",
+                  padding: 14,
+                  position: "relative",
+                }}
+              >
+                <button
+                  type="button"
+                  title="Удалить"
+                  aria-label="Удалить"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRemove(id);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 10,
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    padding: "2px 6px",
+                  }}
+                >
+                  ×
+                </button>
+
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 14,
+                      background: "#f2f2f2",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {isStr(c.logo_url) ? (
+                      <img
+                        src={c.logo_url}
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : null}
+                  </div>
+
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                      title={c.name}
+                    >
+                      {c.name || "Компания"}
+                    </div>
+
+                    <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                      {c.city || "—"} • {c.type?.value || "—"}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9 }}>
+                  {isStr(c.site) ? (
+                    <span style={{ textDecoration: "underline" }}>{c.site}</span>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 13,
+                    opacity: 0.85,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical" as any,
+                    overflow: "hidden",
+                  }}
+                  title={c.description}
+                >
+                  {isStr(c.description) ? c.description : "—"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompanyPicker({
+  alreadyIds,
+  onAdd,
+}: {
+  alreadyIds: string[];
+  onAdd: (company: CompanyDTO) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<CompanyDTO[]>([]);
+  const [error, setError] = useState<string>("");
+
+  const filtered = useMemo(() => {
+    const used = new Set(alreadyIds.map(String));
+    return (items || []).filter((c) => !used.has(String(c.id || "")));
+  }, [items, alreadyIds]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        setError("");
+        setLoading(true);
+        const res = await searchCompanies(query);
+        if (!alive) return;
+        setItems(res);
+      } catch {
+        if (!alive) return;
+        setError("Не удалось загрузить список компаний.");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [query]);
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ fontWeight: 700, marginBottom: 8 }}>Добавить компанию</div>
+
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Поиск по названию / городу..."
+        style={{
+          width: "100%",
+          borderRadius: 12,
+          border: "1px solid #d9d9d9",
+          padding: "10px 12px",
+          outline: "none",
+        }}
+      />
+
+      {loading && <div style={{ marginTop: 8, opacity: 0.7 }}>Загрузка…</div>}
+      {error && <div style={{ marginTop: 8, color: "#b00020" }}>{error}</div>}
+
+      {!loading && !error && (
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.slice(0, 8).map((c) => {
+            const id = String(c.id || "");
+            return (
+              <button
+                key={id || `${c.name}_${Math.random()}`}
+                type="button"
+                onClick={() => onAdd(c)}
+                disabled={!isStr(id)}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  borderRadius: 12,
+                  border: "1px solid #e5e5e5",
+                  background: "#fff",
+                  padding: "10px 12px",
+                  cursor: isStr(id) ? "pointer" : "not-allowed",
+                  textAlign: "left",
+                }}
+              >
+                <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {c.name || "Компания"}
+                  <span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 8 }}>
+                    {c.city ? `(${c.city})` : ""}
+                  </span>
+                </span>
+                <span style={{ fontWeight: 800 }}>＋</span>
+              </button>
+            );
+          })}
+
+          {filtered.length === 0 && (
+            <div style={{ marginTop: 6, opacity: 0.7 }}>Ничего не найдено.</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProfileHREdit() {
   const navigate = useNavigate();
@@ -49,6 +364,27 @@ export default function ProfileHREdit() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [message, setMessage] = useState("");
 
+  const [hrId, setHrId] = useState<string>("");
+  const [companyIds, setCompanyIds] = useState<string[]>([]);
+  const [companies, setCompanies] = useState<CompanyDTO[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+
+  const persistCompanyIds = (next: string[]) => {
+    const uniq = Array.from(new Set(next.map(String))).filter(Boolean);
+    setCompanyIds(uniq);
+    if (hrId) localStorage.setItem(hrCompaniesKey(hrId), JSON.stringify(uniq));
+  };
+
+  const removeCompany = (id: string) => {
+    persistCompanyIds(companyIds.filter((x) => String(x) !== String(id)));
+  };
+
+  const addCompany = (c: CompanyDTO) => {
+    const id = String(c.id || "");
+    if (!isStr(id)) return;
+    persistCompanyIds([id, ...companyIds]);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token") || "";
     const role = (localStorage.getItem("role") || "").trim();
@@ -70,6 +406,9 @@ export default function ProfileHREdit() {
         const raw = await apiGateway({ method: "GET", url: "/hr/me" });
         const data = (raw as any)?.data ?? raw ?? {};
 
+        const hrIdValue = String(data?.id || data?.hr_id || "");
+        setHrId(hrIdValue);
+
         setFormData((prev) => ({
           ...prev,
           surname: data.last_name ?? "",
@@ -83,19 +422,22 @@ export default function ProfileHREdit() {
 
         if (data.avatar_id) setAvatarId(String(data.avatar_id));
 
+        if (isStr(hrIdValue)) {
+          const ids = safeJsonParse<string[]>(
+            localStorage.getItem(hrCompaniesKey(hrIdValue)),
+            []
+          );
+          setCompanyIds(Array.isArray(ids) ? ids : []);
+        }
+
         try {
           const list = await AchievementsAPI.list();
           const avatarItem = list.find((it: any) =>
-            [it?.id, it?.name, it?.file_name].some((v: any) =>
-              hasAvatarPrefix(v)
-            )
+            [it?.id, it?.name, it?.file_name].some((v: any) => hasAvatarPrefix(v))
           );
 
-          if (avatarItem?.url) {
-            setPhoto(avatarItem.url);
-          } else if (data.avatar_url) {
-            setPhoto(data.avatar_url);
-          }
+          if (avatarItem?.url) setPhoto(avatarItem.url);
+          else if (data.avatar_url) setPhoto(data.avatar_url);
         } catch (err) {
           console.warn("Не удалось получить аватар:", err);
           if (data.avatar_url) setPhoto(data.avatar_url);
@@ -106,6 +448,23 @@ export default function ProfileHREdit() {
       }
     })();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!hrId) return;
+
+    const run = async () => {
+      setCompaniesLoading(true);
+      try {
+        const uniq = Array.from(new Set(companyIds.map(String))).filter(Boolean);
+        const res = await Promise.all(uniq.map((id) => fetchCompanyById(id)));
+        setCompanies(res.filter(Boolean) as CompanyDTO[]);
+      } finally {
+        setCompaniesLoading(false);
+      }
+    };
+
+    run();
+  }, [hrId, companyIds]);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -170,9 +529,7 @@ export default function ProfileHREdit() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -393,6 +750,23 @@ export default function ProfileHREdit() {
               value={formData.description}
               onChange={handleChange}
             />
+          </div>
+
+          <div style={{ marginTop: 8 }}>
+            {companiesLoading ? (
+              <div style={{ opacity: 0.7, marginTop: 12 }}>Загрузка компаний…</div>
+            ) : (
+              <CompanyCarousel
+                title="Компании в профиле"
+                items={companies}
+                onRemove={removeCompany}
+              />
+            )}
+
+            <CompanyPicker alreadyIds={companyIds} onAdd={addCompany} />
+
+            <div style={{ marginTop: 8, fontSize: 12, opacity: 0.65 }}>
+            </div>
           </div>
 
           <div className="submit-row">
