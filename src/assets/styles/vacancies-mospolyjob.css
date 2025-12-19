@@ -1,0 +1,420 @@
+/* ========================= 
+   Vacancies page (clean)
+   ========================= */
+
+.mj-vac-wrap{
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 18px 60px;
+  color: #000;
+}
+
+.mj-vac-title{
+  font-family: "Gilroy", system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-weight: 800;
+  font-size: clamp(26px, 3.2vw, 44px);
+  letter-spacing: 0.02em;
+  margin: 6px 0 16px;
+}
+
+.mj-vac-subtitle{
+  margin: 0 0 18px;
+  opacity: 0.7;
+  max-width: 980px;
+  line-height: 1.45;
+}
+
+/* ===== Filters wrapper ===== */
+.mj-vac-filters{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+
+/* Top row: search + salary + buttons */
+.mj-vac-filters-row{
+  display:grid;
+  grid-template-columns: 1.6fr 1fr 260px;
+  gap: 10px;
+  align-items: end;
+}
+
+@media (max-width: 900px){
+  .mj-vac-filters-row{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px){
+  .mj-vac-filters-row{ grid-template-columns: 1fr; }
+}
+
+.mj-vac-mini-actions{
+  display:flex;
+  gap: 10px;
+}
+
+/* ===== Fields ===== */
+.mj-vac-label{
+  display:block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+
+.mj-vac-input,
+.mj-vac-select{
+  width: 100%;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: #fff;
+  color: #000;
+  padding: 0 12px;
+  outline: none;
+}
+
+.mj-vac-input::placeholder{ opacity: 0.55; }
+
+/* ===== Buttons ===== */
+.mj-vac-btn{
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  transition: transform .12s ease, opacity .12s ease;
+  width: 100%;
+}
+
+.mj-vac-btn:active{ transform: translateY(1px); }
+.mj-vac-btn:disabled{ opacity: 0.55; cursor: default; }
+
+.mj-vac-btn--ghost{
+  background: transparent;
+  color: #111;
+}
+
+/* ===== Expandable ===== */
+.mj-vac-toggle{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.70);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.mj-vac-advanced{ padding-top: 4px; }
+
+.mj-vac-advanced-grid{
+  display:grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* used inside advanced block */
+.mj-vac-field{ grid-column: span 3; }
+.mj-vac-field--wide{ grid-column: span 6; }
+
+@media (max-width: 900px){
+  .mj-vac-field{ grid-column: span 6; }
+  .mj-vac-field--wide{ grid-column: span 12; }
+}
+@media (max-width: 520px){
+  .mj-vac-field{ grid-column: span 12; }
+}
+
+.mj-vac-hint{
+  font-size: 12px;
+  opacity: 0.65;
+  margin-top: 2px;
+}
+
+/* ===== Salary dual-range (ONE slider, TWO thumbs) ===== */
+.mj-vac-salary-block{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mj-vac-salary-top{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.75;
+}
+
+/* ✅ ОДИН раз, px-переменные + возможность сдвинуть thumb */
+.mj-vac-dual{
+  --thumb: 18px;         /* внешний размер кружка */
+  --thumb-shift: 0px;    /* хочешь “как слева” — поставь 2px или 3px */
+  --from-x: 0px;
+  --to-x: 0px;
+  --track-h: 4px;
+
+  position: relative;
+  height: 24px;
+  margin-top: 6px;
+}
+
+.mj-vac-dual-track{
+  position:absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--track-h);
+  transform: translateY(-50%);
+  border-radius: 999px;
+
+  background: linear-gradient(
+    to right,
+    rgba(17,17,17,0.18) 0,
+    rgba(17,17,17,0.18) var(--from-x),
+    rgba(17,17,17,0.70) var(--from-x),
+    rgba(17,17,17,0.70) var(--to-x),
+    rgba(17,17,17,0.18) var(--to-x),
+    rgba(17,17,17,0.18) 100%
+  );
+}
+
+.mj-vac-dual input[type="range"]{
+  position:absolute;
+  inset: 0;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* kill native track completely */
+.mj-vac-dual input[type="range"]::-webkit-slider-runnable-track{
+  height: var(--track-h);
+  background: transparent;
+  border: 0;
+}
+.mj-vac-dual input[type="range"]::-moz-range-track{
+  height: var(--track-h);
+  background: transparent;
+  border: 0;
+}
+.mj-vac-dual input[type="range"]::-moz-range-progress{
+  background: transparent;
+}
+
+/* thumb */
+.mj-vac-dual input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+
+  pointer-events: auto;
+  cursor: pointer;
+
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 999px;
+
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.18),
+    0 1px 0 rgba(255,255,255,0.12) inset;
+
+  margin-top: calc((var(--track-h) - var(--thumb)) / 2);
+
+  /* ✅ мягкая подстройка */
+  transform: translateX(var(--thumb-shift));
+}
+
+.mj-vac-dual input[type="range"]::-moz-range-thumb{
+  pointer-events: auto;
+  cursor: pointer;
+
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 999px;
+
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.18),
+    0 1px 0 rgba(255,255,255,0.12) inset;
+
+  transform: translateX(var(--thumb-shift));
+}
+
+/* ✅ для правого бегунка делаем сдвиг в другую сторону */
+.mj-vac-dual .range-to::-webkit-slider-thumb{
+  transform: translateX(calc(-1 * var(--thumb-shift)));
+}
+.mj-vac-dual .range-to::-moz-range-thumb{
+  transform: translateX(calc(-1 * var(--thumb-shift)));
+}
+
+/* layering */
+.mj-vac-dual-track{ z-index: 1; }
+.mj-vac-dual .range-from{ z-index: 2; }
+.mj-vac-dual .range-to{ z-index: 3; }
+
+/* ✅ убрать синюю рамку фокуса вокруг range */
+.mj-vac-dual input[type="range"]:focus{ outline: none !important; }
+.mj-vac-dual input[type="range"]::-moz-focus-outer{ border: 0; }
+
+/* ===== Meta / pagination ===== */
+.mj-vac-meta{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 14px;
+  opacity: 0.75;
+}
+
+.mj-vac-pagination{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+.mj-vac-pagination button{
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(0,0,0,0.03);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.mj-vac-pagination button:disabled{
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ===== Vacancy cards grid ===== */
+.mj-vac-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (max-width: 1050px){
+  .mj-vac-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px){
+  .mj-vac-grid{ grid-template-columns: 1fr; }
+}
+
+.mj-vac-card{ cursor: pointer; }
+
+.mj-vac-card .hr-card-link{
+  display:inline-flex;
+  gap: 8px;
+  align-items:center;
+}
+
+.mj-vac-kpi{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mj-vac-pill{
+  display:inline-flex;
+  align-items:center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 850;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.20);
+  backdrop-filter: blur(4px);
+}
+
+/* Hide top gradient divider on this page (if it exists somewhere globally) */
+.mj-no-top-divider .mj-gradient-divider{
+  display: none !important;
+}
+
+.mj-vac-range{
+  display: grid;
+  grid-template-columns: 1fr 18px 1fr; /* от — — до */
+  gap: 8px;
+  align-items: center;
+}
+
+/* сделаем поля поменьше именно в зарплате */
+.mj-vac-salary-block .mj-vac-input{
+  height: 36px;           /* было 44 */
+  border-radius: 12px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.mj-vac-range-sep{
+  text-align: center;
+  font-weight: 900;
+  opacity: 0.55;
+  user-select: none;
+  line-height: 1;
+}
+
+/* на узких экранах можно оставить в линию, но чуть меньше */
+@media (max-width: 520px){
+  .mj-vac-range{
+    grid-template-columns: 1fr 14px 1fr;
+    gap: 6px;
+  }
+}
+
+.mj-vac-salary-block{
+  align-self: center;
+}
+
+.mj-vac-salary-block .mj-vac-label{
+  margin-bottom: 4px; /* было 6px */
+}
+
+.mj-vac-filters-row{
+  align-items: center; /* вместо end */
+}
+
+/* кнопки пусть остаются прижатыми вниз */
+.mj-vac-mini-actions{
+  align-self: flex-end;
+}
+
+.mj-vac-mini-actions{
+  align-self: center;
+}
+
+.mj-vac-mini-actions{
+  align-self: center;
+  margin-top: 2px;
+}

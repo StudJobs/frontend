@@ -1,4 +1,3 @@
-// src/pages/ProfileHRFull.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
@@ -1317,7 +1316,6 @@ export default function ProfileHRFull() {
                 overflow: "hidden",
               }}
             >
-              {/* header */}
               <div style={{ padding: "26px 30px 16px 30px" }}>
                 <div
                   style={{
@@ -1441,7 +1439,6 @@ export default function ProfileHRFull() {
                       )}
                     </div>
 
-                    {/* Вложение */}
                     <div style={{ marginTop: 22 }}>
                       <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8 }}>Вложение (файл)</div>
 
