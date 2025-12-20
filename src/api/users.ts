@@ -44,21 +44,21 @@ export const UsersAPI = {
         method: "GET",
         url: "/users",
         params: {
-          ...(params.page ? { page: params.page } : {}),
-          ...(params.limit ? { limit: params.limit } : {}),
-          ...(params.category ? { category: params.category } : {}),
+          ...(params.page != null ? { page: params.page } : {}),
+          ...(params.limit != null ? { limit: params.limit } : {}),
+          ...(params.category && params.category.trim()
+            ? { category: params.category.trim() }
+            : {}),
         },
       })
     );
 
     if (data?.pagination || data?.profiles) return data as UsersListResponse;
 
-    if (Array.isArray(data)) {
-      return { profiles: data as UserListItem[] };
-    }
-    if (Array.isArray(data?.items)) {
-      return { profiles: data.items as UserListItem[] };
-    }
+    if (Array.isArray(data)) return { profiles: data as UserListItem[] };
+    if (Array.isArray(data?.items)) return { profiles: data.items as UserListItem[] };
+    if (Array.isArray(data?.users)) return { profiles: data.users as UserListItem[] };
+    if (Array.isArray(data?.data)) return { profiles: data.data as UserListItem[] };
 
     return { profiles: [] };
   },

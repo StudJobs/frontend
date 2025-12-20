@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-hr-mospolyjob.css";
 import "../assets/styles/vacancies-mospolyjob.css";
@@ -12,39 +13,40 @@ import checkLong from "../assets/images/check-long.png";
 
 import { apiGateway } from "../api/apiGateway";
 
-type CompanyTypeObj = { value?: string } | string;
-
-type CompanyItem = {
+type UserProfile = {
   id?: string;
-  name?: string;
+  first_name?: string;
+  last_name?: string;
+  age?: number;
+
+  email?: string;
+  tg?: string;
+  telegram?: string;
+
   description?: string;
-  city?: string;
-  site?: string;
-  type?: CompanyTypeObj;
+  profession_category?: string;
+
+  role?: string;
 };
 
-type CompanyPagination = {
+type UsersPagination = {
   total?: number;
   pages?: number;
   current_page?: number;
 };
 
-type CompanyListResponse = {
-  companies?: CompanyItem[];
-  pagination?: CompanyPagination;
+type UsersListResponse = {
+  pagination?: UsersPagination;
+  profiles?: UserProfile[];
 };
 
 const toStr = (v: any) => (v === undefined || v === null ? "" : String(v));
 
-const pickType = (c: CompanyItem) => {
-  const t: any = (c as any)?.type;
-  const v =
-    (typeof t === "string" ? t : t?.value) ||
-    (c as any)?.company_type ||
-    (c as any)?.type_value ||
-    "";
-  return String(v || "").trim();
-};
+const fullName = (u: UserProfile) =>
+  `${toStr(u.last_name).trim()} ${toStr(u.first_name).trim()}`.trim() ||
+  toStr(u.first_name).trim() ||
+  toStr(u.last_name).trim() ||
+  "Пользователь";
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -60,11 +62,12 @@ const cardDecor = (i: number) => {
   return spiral;
 };
 
-const normalizeUrl = (url: string) => {
-  const u = (url || "").trim();
-  if (!u) return "";
-  if (/^https?:\/\//i.test(u)) return u;
-  return `https://${u}`;
+const normalizeTgLink = (tgLike: string) => {
+  const raw = (tgLike || "").trim();
+  if (!raw) return "";
+  const s = raw.startsWith("@") ? raw.slice(1) : raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://t.me/${s}`;
 };
 
 const DEFAULT_LIMIT = 9;
@@ -90,62 +93,78 @@ const getAuthHeaderSafe = (): Record<string, string> => {
   }
 };
 
-const isCompanyNotEmpty = (c: CompanyItem): boolean => {
-  const hasName = toStr(c.name).trim().length > 0;
-  if (!hasName) return false;
-
-  const hasAnyExtra =
-    toStr(c.description).trim().length > 0 ||
-    toStr(c.city).trim().length > 0 ||
-    toStr(c.site).trim().length > 0 ||
-    pickType(c).length > 0;
-
-  return hasAnyExtra;
+const isEmployerRole = (role?: string) => {
+  const r = toStr(role).toUpperCase();
+  return (
+    r.includes("EMPLOYER") ||
+    r.includes("HR") ||
+    r.includes("COMPANY") ||
+    r.includes("RECRUITER")
+  );
 };
 
-export default function Companies() {
+const isEmptyUser = (u: UserProfile) => {
+  const first = toStr(u.first_name).trim();
+  const last = toStr(u.last_name).trim();
+  const noRealName = !first && !last;
+
+  const age = typeof u.age === "number" && Number.isFinite(u.age) ? u.age : null;
+  const email = toStr(u.email).trim();
+
+  const tg = toStr(u.tg || u.telegram).trim();
+  const desc = toStr(u.description).trim();
+  const cat = toStr(u.profession_category).trim();
+
+  const hasUseful = !!tg || !!desc || !!cat;
+  if (hasUseful) return false;
+
+  const hasOnlyNoise = !!email || age !== null;
+  return noRealName && hasOnlyNoise;
+};
+
+export default function Users() {
+  const navigate = useNavigate();
+
+  const PROFILE_ROUTE_PREFIX = "/profile";
+
   const [filters, setFilters] = useState({
     page: 1,
     limit: DEFAULT_LIMIT,
-    city: "",
-    type: "",
+    category: "",
     search_name: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const [pagination, setPagination] = useState<CompanyPagination>({});
-  const [companies, setCompanies] = useState<CompanyItem[]>([]);
+  const [pagination, setPagination] = useState<UsersPagination>({});
+  const [rawUsers, setRawUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
 
-  const [selected, setSelected] = useState<CompanyItem | null>(null);
+  const [selected, setSelected] = useState<UserProfile | null>(null);
 
   const currentPage = pagination.current_page ?? filters.page ?? 1;
   const pages = pagination.pages;
-  const total = pagination.total;
 
-  const cityOptions = useMemo(() => {
-    const list = (companies || [])
-      .map((c) => toStr(c.city).trim())
+  const categoryOptions = useMemo(() => {
+    const list = (users || [])
+      .map((u) => toStr(u.profession_category).trim())
       .filter(Boolean);
     return Array.from(new Set(list)).slice(0, 200);
-  }, [companies]);
+  }, [users]);
 
-  const typeOptions = useMemo(() => {
-    const list = (companies || [])
-      .map((c) => pickType(c))
-      .filter(Boolean);
-    return Array.from(new Set(list)).slice(0, 200);
-  }, [companies]);
+  const goToProfile = (id?: string) => {
+    const uid = toStr(id).trim();
+    if (!uid) return;
+    navigate(`${PROFILE_ROUTE_PREFIX}/${encodeURIComponent(uid)}`);
+  };
 
-  const fetchCompanies = async (next?: Partial<typeof filters>) => {
+  const fetchUsers = async (next?: Partial<typeof filters>) => {
     const merged = { ...filters, ...(next || {}) };
     const page = Math.max(1, Number(merged.page || 1));
     const limit = DEFAULT_LIMIT;
 
-    const city = String(merged.city || "").trim();
-    const type = String(merged.type || "").trim();
-    const searchName = String(merged.search_name || "").trim();
+    const category = String(merged.category || "").trim();
 
     setFilters({ ...merged, page, limit });
 
@@ -153,39 +172,31 @@ export default function Companies() {
     setError("");
 
     try {
-      const qs = buildQuery({ page, limit, city, type });
+      const qs = buildQuery({ page, limit, category });
 
       const resp: any = await apiGateway({
         method: "GET",
-        url: `/company${qs}`,
+        url: `/users${qs}`,
         headers: {
           ...getAuthHeaderSafe(),
           Accept: "application/json",
         },
       });
 
-      const obj: CompanyListResponse = resp?.data ?? resp ?? {};
-      const listRaw = Array.isArray(obj.companies) ? obj.companies : [];
+      const obj: UsersListResponse = resp?.data ?? resp ?? {};
+      const list = Array.isArray(obj.profiles) ? obj.profiles : [];
       const pag = obj.pagination || {};
 
-      const listClean = listRaw.filter(isCompanyNotEmpty);
-
-      const filtered =
-        searchName.length > 0
-          ? listClean.filter((c) =>
-              toStr(c.name).toLowerCase().includes(searchName.toLowerCase())
-            )
-          : listClean;
-
-      setCompanies(filtered);
+      setRawUsers(list);
       setPagination(pag);
     } catch (e: any) {
       const msg =
         typeof e === "string"
           ? e
-          : e?.detail || e?.message || "Не удалось загрузить компании";
+          : e?.detail || e?.message || "Не удалось загрузить пользователей";
       setError(String(msg));
-      setCompanies([]);
+      setRawUsers([]);
+      setUsers([]);
       setPagination({});
     } finally {
       setLoading(false);
@@ -193,31 +204,36 @@ export default function Companies() {
   };
 
   useEffect(() => {
-    fetchCompanies();
+    fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onChange =
-    (key: keyof typeof filters) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const value = e.target.value;
-      setFilters((s) => ({ ...s, [key]: value }));
-    };
+  useEffect(() => {
+    if (!rawUsers.length) {
+      setUsers([]);
+      return;
+    }
+
+    const noEmployers = rawUsers.filter((u) => !isEmployerRole(u.role));
+    const nonEmpty = noEmployers.filter((u) => !isEmptyUser(u));
+
+    const searchName = toStr(filters.search_name).trim().toLowerCase();
+    const finalList =
+      searchName.length > 0
+        ? nonEmpty.filter((u) => fullName(u).toLowerCase().includes(searchName))
+        : nonEmpty;
+
+    setUsers(finalList);
+  }, [rawUsers, filters.search_name]);
 
   const reset = () => {
-    const base = {
-      page: 1,
-      limit: DEFAULT_LIMIT,
-      city: "",
-      type: "",
-      search_name: "",
-    };
+    const base = { page: 1, limit: DEFAULT_LIMIT, category: "", search_name: "" };
     setFilters(base);
-    fetchCompanies(base);
+    fetchUsers(base);
   };
 
-  const openCompanySite = (site?: string) => {
-    const href = normalizeUrl(toStr(site));
+  const openTg = (tgLike?: string) => {
+    const href = normalizeTgLink(toStr(tgLike));
     if (!href) return;
     window.open(href, "_blank", "noopener,noreferrer");
   };
@@ -227,60 +243,48 @@ export default function Companies() {
       <Header />
 
       <div className="mj-vac-wrap">
-        <h1 className="mj-vac-title">Компании</h1>
+        <h1 className="mj-vac-title">Кандидаты</h1>
         <p className="mj-vac-subtitle"></p>
 
         <div className="mj-vac-filters">
           <div className="mj-vac-filters-row">
             <div>
-              <label className="mj-vac-label">Поиск по названию</label>
+              <label className="mj-vac-label">Поиск по имени</label>
               <input
                 className="mj-vac-input"
-                placeholder="Например: Мосполитех"
+                placeholder="Например: Иванов Иван"
                 value={toStr(filters.search_name)}
-                onChange={onChange("search_name")}
+                onChange={(e) =>
+                  setFilters((s) => ({ ...s, search_name: e.target.value }))
+                }
               />
             </div>
 
             <div>
-              <label className="mj-vac-label">Город</label>
-              {cityOptions.length ? (
+              <label className="mj-vac-label">Категория</label>
+              {categoryOptions.length ? (
                 <input
                   className="mj-vac-input"
-                  list="cities-list"
-                  placeholder="Москва"
-                  value={toStr(filters.city)}
-                  onChange={onChange("city")}
+                  list="cats-list"
+                  placeholder="Например: Backend Developer"
+                  value={toStr(filters.category)}
+                  onChange={(e) =>
+                    setFilters((s) => ({ ...s, category: e.target.value }))
+                  }
                 />
               ) : (
                 <input
                   className="mj-vac-input"
-                  placeholder="Москва"
-                  value={toStr(filters.city)}
-                  onChange={onChange("city")}
+                  placeholder="Например: Backend Developer"
+                  value={toStr(filters.category)}
+                  onChange={(e) =>
+                    setFilters((s) => ({ ...s, category: e.target.value }))
+                  }
                 />
               )}
             </div>
 
-            <div>
-              <label className="mj-vac-label">Тип компании</label>
-              {typeOptions.length ? (
-                <input
-                  className="mj-vac-input"
-                  list="types-list"
-                  placeholder="Например: ВУЗ / IT / Банк"
-                  value={toStr(filters.type)}
-                  onChange={onChange("type")}
-                />
-              ) : (
-                <input
-                  className="mj-vac-input"
-                  placeholder="Например: ВУЗ / IT / Банк"
-                  value={toStr(filters.type)}
-                  onChange={onChange("type")}
-                />
-              )}
-            </div>
+            <div aria-hidden />
           </div>
 
           <div
@@ -295,7 +299,7 @@ export default function Companies() {
             <button
               className="mj-vac-btn"
               disabled={loading}
-              onClick={() => fetchCompanies({ page: 1 })}
+              onClick={() => fetchUsers({ page: 1 })}
               style={{ minWidth: 260 }}
             >
               {loading ? "Загрузка…" : "Применить"}
@@ -324,17 +328,9 @@ export default function Companies() {
             </button>
           </div>
 
-          {cityOptions.length ? (
-            <datalist id="cities-list">
-              {cityOptions.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
-          ) : null}
-
-          {typeOptions.length ? (
-            <datalist id="types-list">
-              {typeOptions.map((t) => (
+          {categoryOptions.length ? (
+            <datalist id="cats-list">
+              {categoryOptions.map((t) => (
                 <option key={t} value={t} />
               ))}
             </datalist>
@@ -342,25 +338,17 @@ export default function Companies() {
         </div>
 
         <div className="mj-vac-meta">
-          <div>
-            {typeof total === "number"
-              ? `Найдено: ${total}`
-              : `Страница: ${currentPage}${
-                  typeof pages === "number" ? ` / ${pages}` : ""
-                }`}
-          </div>
+          <div>Найдено: {users.length}</div>
 
           <div className="mj-vac-pagination">
             <button
-              onClick={() =>
-                fetchCompanies({ page: Math.max(1, currentPage - 1) })
-              }
+              onClick={() => fetchUsers({ page: Math.max(1, currentPage - 1) })}
               disabled={loading || currentPage <= 1}
             >
               Назад
             </button>
             <button
-              onClick={() => fetchCompanies({ page: currentPage + 1 })}
+              onClick={() => fetchUsers({ page: currentPage + 1 })}
               disabled={
                 loading ||
                 (typeof pages === "number" ? currentPage >= pages : false)
@@ -378,20 +366,24 @@ export default function Companies() {
         ) : null}
 
         <div className="mj-vac-grid">
-          {companies.map((c, idx) => {
-            const name = (c.name || "Компания").trim();
-            const city = toStr(c.city).trim();
-            const type = pickType(c);
+          {users.map((u, idx) => {
+            const name = fullName(u);
+            const category = toStr(u.profession_category).trim();
+            const age =
+              typeof u.age === "number" && Number.isFinite(u.age) ? u.age : null;
+
+            const email = toStr(u.email).trim();
+            const tg = toStr(u.tg || u.telegram).trim();
 
             return (
               <article
-                key={String(c.id || `${name}-${idx}`)}
+                key={String(u.id || `${name}-${idx}`)}
                 className={`hr-card mj-vac-card ${cardVariant(idx)}`}
-                onClick={() => setSelected(c)}
+                onClick={() => setSelected(u)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") setSelected(c);
+                  if (e.key === "Enter" || e.key === " ") setSelected(u);
                 }}
               >
                 <div className="hr-card-decor" aria-hidden>
@@ -400,7 +392,7 @@ export default function Companies() {
 
                 <h3>{name}</h3>
 
-                {city ? (
+                {category ? (
                   <div
                     style={{
                       marginTop: 6,
@@ -409,21 +401,19 @@ export default function Companies() {
                       fontSize: 13,
                     }}
                   >
-                    {city}
+                    {category}
                   </div>
                 ) : null}
 
                 <div className="hr-card-link">Посмотреть</div>
 
                 <div className="mj-vac-kpi">
-                  <span className="mj-vac-pill">{type || "—"}</span>
                   <span className="mj-vac-pill">
-                    Сайт: {toStr(c.site).trim() ? "есть" : "—"}
+                    Возраст: {age !== null ? age : "—"}
                   </span>
-                  <span className="mj-vac-pill">company</span>
                 </div>
 
-                {toStr(c.description).trim() ? (
+                {email || tg ? (
                   <div
                     style={{
                       marginTop: 10,
@@ -436,7 +426,9 @@ export default function Companies() {
                       overflow: "hidden",
                     }}
                   >
-                    {toStr(c.description)}
+                    {email ? `Email: ${email}` : ""}
+                    {email && tg ? " • " : ""}
+                    {tg ? `TG: ${tg}` : ""}
                   </div>
                 ) : null}
               </article>
@@ -444,7 +436,7 @@ export default function Companies() {
           })}
         </div>
 
-        {!loading && !error && companies.length === 0 ? (
+        {!loading && !error && users.length === 0 ? (
           <div style={{ opacity: 0.75, marginTop: 14 }}>
             Ничего не нашли. Попробуй смягчить фильтры.
           </div>
@@ -456,12 +448,12 @@ export default function Companies() {
           <div className="mj-modal" onClick={(e) => e.stopPropagation()}>
             <div className="mj-modal-header">
               <div>
-                <h2 className="mj-modal-title">
-                  {(selected.name || "Компания").trim()}
+                <h2 className="mj-modal-title" style={{ marginBottom: 6 }}>
+                  {fullName(selected)}
                 </h2>
                 <p className="mj-modal-subtitle">
-                  Город: {toStr(selected.city).trim() || "—"} • Тип:{" "}
-                  {pickType(selected) || "—"}
+                  Категория: {toStr(selected.profession_category).trim() || "—"} •
+                  Возраст: {typeof selected.age === "number" ? selected.age : "—"}
                 </p>
               </div>
 
@@ -483,13 +475,10 @@ export default function Companies() {
 
             <div className="mj-chip-row">
               <div className="mj-chip mj-chip--green">
-                Тип: {pickType(selected) || "—"}
+                Категория: {toStr(selected.profession_category).trim() || "—"}
               </div>
               <div className="mj-chip mj-chip--blue">
-                Город: {toStr(selected.city).trim() || "—"}
-              </div>
-              <div className="mj-chip">
-                Сайт: {toStr(selected.site).trim() ? "есть" : "—"}
+                Возраст: {typeof selected.age === "number" ? selected.age : "—"}
               </div>
             </div>
 
@@ -499,34 +488,49 @@ export default function Companies() {
                 <div>{toStr(selected.description).trim() || "—"}</div>
               </div>
 
-              <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
-                <div className="mj-label">Сайт</div>
+              <div className="mj-field">
+                <div className="mj-label">Email</div>
+                <div>{toStr(selected.email).trim() || "—"}</div>
+              </div>
 
-                {toStr(selected.site).trim() ? (
-                  <button
-                    type="button"
-                    className="mj-vac-btn mj-vac-btn--ghost"
-                    style={{
-                      width: "100%",
-                      borderRadius: 14,
-                      padding: "12px 16px",
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      border: "1px solid rgba(0,0,0,0.18)",
-                      background: "rgba(0,0,0,0.04)",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openCompanySite(selected.site);
-                    }}
+              <div className="mj-field">
+                <div className="mj-label">Telegram</div>
+                {toStr(selected.tg || selected.telegram).trim() ? (
+                  <a
+                    href={normalizeTgLink(toStr(selected.tg || selected.telegram))}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ textDecoration: "underline", fontWeight: 800 }}
                   >
-                    Открыть сайт
-                  </button>
+                    {toStr(selected.tg || selected.telegram).trim()}
+                  </a>
                 ) : (
                   <div>—</div>
                 )}
               </div>
             </div>
+
+            {toStr(selected.tg || selected.telegram).trim() ? (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  className="mj-vac-btn"
+                  style={{
+                    width: "100%",
+                    borderRadius: 14,
+                    padding: "12px 16px",
+                    fontWeight: 900,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openTg(selected.tg || selected.telegram);
+                  }}
+                >
+                  Открыть Telegram
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

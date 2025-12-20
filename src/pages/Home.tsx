@@ -39,7 +39,9 @@ export default function Home() {
                 <img src="/src/assets/images/spiral.png" alt="" />
               </div>
               <h3>Кандидаты</h3>
-              <a className="mj-card-link" href="#">Посмотреть</a>
+              <Link className="mj-card-link" to="/users">
+                Посмотреть
+              </Link>
             </article>
 
             <article className="mj-card mj-card--purple">
@@ -47,7 +49,9 @@ export default function Home() {
                 <img src="/src/assets/images/check-long.png" alt="" />
               </div>
               <h3>Компании</h3>
-              <a className="mj-card-link" href="#">Посмотреть</a>
+              <Link className="mj-card-link" to="/companies">
+                Посмотреть
+              </Link>
             </article>
           </div>
         </div>
