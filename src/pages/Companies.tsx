@@ -21,6 +21,10 @@ type CompanyItem = {
   city?: string;
   site?: string;
   type?: CompanyTypeObj;
+
+  logo_url?: string;
+  image_url?: string;
+  avatar_url?: string;
 };
 
 type CompanyPagination = {
@@ -34,17 +38,30 @@ type CompanyListResponse = {
   pagination?: CompanyPagination;
 };
 
-const toStr = (v: any) => (v === undefined || v === null ? "" : String(v));
-
-const pickType = (c: CompanyItem) => {
-  const t: any = (c as any)?.type;
-  const v =
-    (typeof t === "string" ? t : t?.value) ||
-    (c as any)?.company_type ||
-    (c as any)?.type_value ||
-    "";
-  return String(v || "").trim();
+type LocalCompanyStorage = {
+  logo?: {
+    original_name: string;
+    mime: string;
+    size: number;
+    dataUrl: string;
+    created_at: number;
+  };
+  documents?: any[];
 };
+
+const toStr = (v: any) => (v === undefined || v === null ? "" : String(v));
+const isStr = (v: any) => typeof v === "string" && v.trim().length > 0;
+
+const safeJsonParse = <T,>(raw: string | null, fallback: T): T => {
+  try {
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const companyLocalKey = (companyId: string) => `company_local_${companyId}`;
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -58,6 +75,16 @@ const cardDecor = (i: number) => {
   if (v === 0) return wave;
   if (v === 1) return checkLong;
   return spiral;
+};
+
+const pickType = (c: CompanyItem) => {
+  const t: any = (c as any)?.type;
+  const v =
+    (typeof t === "string" ? t : t?.value) ||
+    (c as any)?.company_type ||
+    (c as any)?.type_value ||
+    "";
+  return String(v || "").trim();
 };
 
 const normalizeUrl = (url: string) => {
@@ -103,6 +130,25 @@ const isCompanyNotEmpty = (c: CompanyItem): boolean => {
   return hasAnyExtra;
 };
 
+const getCompanyLogoDataUrl = (companyId?: string | null): string => {
+  const id = toStr(companyId).trim();
+  if (!id) return "";
+
+  const rawLocal = localStorage.getItem(companyLocalKey(id));
+  const parsed = safeJsonParse<LocalCompanyStorage>(rawLocal, {});
+  const fromLocal = parsed?.logo?.dataUrl;
+  if (isStr(fromLocal)) return fromLocal.trim();
+
+  const legacy = localStorage.getItem(`company_logo_${id}`);
+  return isStr(legacy) ? legacy.trim() : "";
+};
+
+const pickBackendLogoUrl = (c: CompanyItem) =>
+  toStr(c.logo_url).trim() ||
+  toStr(c.image_url).trim() ||
+  toStr(c.avatar_url).trim() ||
+  "";
+
 export default function Companies() {
   const [filters, setFilters] = useState({
     page: 1,
@@ -117,7 +163,6 @@ export default function Companies() {
 
   const [pagination, setPagination] = useState<CompanyPagination>({});
   const [companies, setCompanies] = useState<CompanyItem[]>([]);
-
   const [selected, setSelected] = useState<CompanyItem | null>(null);
 
   const currentPage = pagination.current_page ?? filters.page ?? 1;
@@ -125,16 +170,12 @@ export default function Companies() {
   const total = pagination.total;
 
   const cityOptions = useMemo(() => {
-    const list = (companies || [])
-      .map((c) => toStr(c.city).trim())
-      .filter(Boolean);
+    const list = (companies || []).map((c) => toStr(c.city).trim()).filter(Boolean);
     return Array.from(new Set(list)).slice(0, 200);
   }, [companies]);
 
   const typeOptions = useMemo(() => {
-    const list = (companies || [])
-      .map((c) => pickType(c))
-      .filter(Boolean);
+    const list = (companies || []).map((c) => pickType(c)).filter(Boolean);
     return Array.from(new Set(list)).slice(0, 200);
   }, [companies]);
 
@@ -155,7 +196,7 @@ export default function Companies() {
     try {
       const qs = buildQuery({ page, limit, city, type });
 
-      const resp: any = await apiGateway({
+      const obj = await apiGateway<CompanyListResponse>({
         method: "GET",
         url: `/company${qs}`,
         headers: {
@@ -164,9 +205,8 @@ export default function Companies() {
         },
       });
 
-      const obj: CompanyListResponse = resp?.data ?? resp ?? {};
-      const listRaw = Array.isArray(obj.companies) ? obj.companies : [];
-      const pag = obj.pagination || {};
+      const listRaw = Array.isArray(obj?.companies) ? obj.companies : [];
+      const pag = obj?.pagination || {};
 
       const listClean = listRaw.filter(isCompanyNotEmpty);
 
@@ -181,9 +221,7 @@ export default function Companies() {
       setPagination(pag);
     } catch (e: any) {
       const msg =
-        typeof e === "string"
-          ? e
-          : e?.detail || e?.message || "Не удалось загрузить компании";
+        typeof e === "string" ? e : e?.detail || e?.message || "Не удалось загрузить компании";
       setError(String(msg));
       setCompanies([]);
       setPagination({});
@@ -200,18 +238,11 @@ export default function Companies() {
   const onChange =
     (key: keyof typeof filters) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const value = e.target.value;
-      setFilters((s) => ({ ...s, [key]: value }));
+      setFilters((s) => ({ ...s, [key]: e.target.value }));
     };
 
   const reset = () => {
-    const base = {
-      page: 1,
-      limit: DEFAULT_LIMIT,
-      city: "",
-      type: "",
-      search_name: "",
-    };
+    const base = { page: 1, limit: DEFAULT_LIMIT, city: "", type: "", search_name: "" };
     setFilters(base);
     fetchCompanies(base);
   };
@@ -220,6 +251,11 @@ export default function Companies() {
     const href = normalizeUrl(toStr(site));
     if (!href) return;
     window.open(href, "_blank", "noopener,noreferrer");
+  };
+
+  const companyImg = (c: CompanyItem) => {
+    const id = toStr(c.id).trim();
+    return getCompanyLogoDataUrl(id) || pickBackendLogoUrl(c);
   };
 
   return (
@@ -283,15 +319,7 @@ export default function Companies() {
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 16,
-              marginTop: 12,
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
             <button
               className="mj-vac-btn"
               disabled={loading}
@@ -312,12 +340,10 @@ export default function Companies() {
                 boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(0,0,0,0.07)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.07)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(0,0,0,0.04)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.04)";
               }}
             >
               Сброс
@@ -345,26 +371,19 @@ export default function Companies() {
           <div>
             {typeof total === "number"
               ? `Найдено: ${total}`
-              : `Страница: ${currentPage}${
-                  typeof pages === "number" ? ` / ${pages}` : ""
-                }`}
+              : `Страница: ${currentPage}${typeof pages === "number" ? ` / ${pages}` : ""}`}
           </div>
 
           <div className="mj-vac-pagination">
             <button
-              onClick={() =>
-                fetchCompanies({ page: Math.max(1, currentPage - 1) })
-              }
+              onClick={() => fetchCompanies({ page: Math.max(1, currentPage - 1) })}
               disabled={loading || currentPage <= 1}
             >
               Назад
             </button>
             <button
               onClick={() => fetchCompanies({ page: currentPage + 1 })}
-              disabled={
-                loading ||
-                (typeof pages === "number" ? currentPage >= pages : false)
-              }
+              disabled={loading || (typeof pages === "number" ? currentPage >= pages : false)}
             >
               Вперёд
             </button>
@@ -372,9 +391,7 @@ export default function Companies() {
         </div>
 
         {error ? (
-          <div style={{ color: "#c02838", fontWeight: 800, marginBottom: 14 }}>
-            {error}
-          </div>
+          <div style={{ color: "#c02838", fontWeight: 800, marginBottom: 14 }}>{error}</div>
         ) : null}
 
         <div className="mj-vac-grid">
@@ -382,6 +399,7 @@ export default function Companies() {
             const name = (c.name || "Компания").trim();
             const city = toStr(c.city).trim();
             const type = pickType(c);
+            const img = companyImg(c);
 
             return (
               <article
@@ -393,138 +411,182 @@ export default function Companies() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") setSelected(c);
                 }}
+                style={{ position: "relative", overflow: "hidden" }}
               >
-                <div className="hr-card-decor" aria-hidden>
+                {img ? (
+                  <>
+                    <img
+                      src={img}
+                      alt=""
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        zIndex: 0,
+                        transform: "scale(1.02)",
+                      }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                    <div
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.30) 100%)",
+                        zIndex: 1,
+                      }}
+                    />
+                  </>
+                ) : null}
+
+                <div className="hr-card-decor" aria-hidden style={{ position: "relative", zIndex: 2 }}>
                   <img src={cardDecor(idx)} alt="" />
                 </div>
 
-                <h3>{name}</h3>
+                <div style={{ position: "relative", zIndex: 3 }}>
+                  <h3>{name}</h3>
 
-                {city ? (
-                  <div
-                    style={{
-                      marginTop: 6,
-                      opacity: 0.88,
-                      fontWeight: 800,
-                      fontSize: 13,
-                    }}
-                  >
-                    {city}
+                  {city ? (
+                    <div style={{ marginTop: 6, opacity: 0.88, fontWeight: 800, fontSize: 13 }}>
+                      {city}
+                    </div>
+                  ) : null}
+
+                  <div className="hr-card-link">Посмотреть</div>
+
+                  <div className="mj-vac-kpi">
+                    <span className="mj-vac-pill">{type || "—"}</span>
+                    <span className="mj-vac-pill">Сайт: {toStr(c.site).trim() ? "есть" : "—"}</span>
                   </div>
-                ) : null}
 
-                <div className="hr-card-link">Посмотреть</div>
-
-                <div className="mj-vac-kpi">
-                  <span className="mj-vac-pill">{type || "—"}</span>
-                  <span className="mj-vac-pill">
-                    Сайт: {toStr(c.site).trim() ? "есть" : "—"}
-                  </span>
-                  <span className="mj-vac-pill">company</span>
+                  {toStr(c.description).trim() ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        opacity: 0.92,
+                        fontWeight: 750,
+                        fontSize: 13,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {toStr(c.description)}
+                    </div>
+                  ) : null}
                 </div>
-
-                {toStr(c.description).trim() ? (
-                  <div
-                    style={{
-                      marginTop: 10,
-                      opacity: 0.92,
-                      fontWeight: 750,
-                      fontSize: 13,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {toStr(c.description)}
-                  </div>
-                ) : null}
               </article>
             );
           })}
         </div>
 
         {!loading && !error && companies.length === 0 ? (
-          <div style={{ opacity: 0.75, marginTop: 14 }}>
-            Ничего не нашли. Попробуй смягчить фильтры.
-          </div>
+          <div style={{ opacity: 0.75, marginTop: 14 }}>Ничего не нашли. Попробуй смягчить фильтры.</div>
         ) : null}
       </div>
 
       {selected ? (
         <div className="mj-modal-backdrop" onClick={() => setSelected(null)}>
-          <div className="mj-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="mj-modal-header">
-              <div>
-                <h2 className="mj-modal-title">
-                  {(selected.name || "Компания").trim()}
-                </h2>
-                <p className="mj-modal-subtitle">
-                  Город: {toStr(selected.city).trim() || "—"} • Тип:{" "}
-                  {pickType(selected) || "—"}
-                </p>
+          <div className="mj-modal" onClick={(e) => e.stopPropagation()} style={{ position: "relative", overflow: "hidden" }}>
+            {companyImg(selected) ? (
+              <>
+                <img
+                  src={companyImg(selected)}
+                  alt=""
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    zIndex: 0,
+                    transform: "scale(1.02)",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(255,255,255,0.86)",
+                    zIndex: 1,
+                  }}
+                />
+              </>
+            ) : null}
+
+            <div style={{ position: "relative", zIndex: 2 }}>
+              <div className="mj-modal-header">
+                <div>
+                  <h2 className="mj-modal-title">{(selected.name || "Компания").trim()}</h2>
+                  <p className="mj-modal-subtitle">
+                    Город: {toStr(selected.city).trim() || "—"} • Тип: {pickType(selected) || "—"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    borderRadius: 14,
+                    padding: "10px 14px",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                  }}
+                >
+                  Закрыть
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                style={{
-                  background: "transparent",
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  borderRadius: 14,
-                  padding: "10px 14px",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                }}
-              >
-                Закрыть
-              </button>
-            </div>
-
-            <div className="mj-chip-row">
-              <div className="mj-chip mj-chip--green">
-                Тип: {pickType(selected) || "—"}
-              </div>
-              <div className="mj-chip mj-chip--blue">
-                Город: {toStr(selected.city).trim() || "—"}
-              </div>
-              <div className="mj-chip">
-                Сайт: {toStr(selected.site).trim() ? "есть" : "—"}
-              </div>
-            </div>
-
-            <div className="mj-grid">
-              <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
-                <div className="mj-label">Описание</div>
-                <div>{toStr(selected.description).trim() || "—"}</div>
+              <div className="mj-chip-row">
+                <div className="mj-chip mj-chip--green">Тип: {pickType(selected) || "—"}</div>
+                <div className="mj-chip mj-chip--blue">Город: {toStr(selected.city).trim() || "—"}</div>
+                <div className="mj-chip">Сайт: {toStr(selected.site).trim() ? "есть" : "—"}</div>
               </div>
 
-              <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
-                <div className="mj-label">Сайт</div>
+              <div className="mj-grid">
+                <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
+                  <div className="mj-label">Описание</div>
+                  <div>{toStr(selected.description).trim() || "—"}</div>
+                </div>
 
-                {toStr(selected.site).trim() ? (
-                  <button
-                    type="button"
-                    className="mj-vac-btn mj-vac-btn--ghost"
-                    style={{
-                      width: "100%",
-                      borderRadius: 14,
-                      padding: "12px 16px",
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      border: "1px solid rgba(0,0,0,0.18)",
-                      background: "rgba(0,0,0,0.04)",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openCompanySite(selected.site);
-                    }}
-                  >
-                    Открыть сайт
-                  </button>
-                ) : (
-                  <div>—</div>
-                )}
+                <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
+                  <div className="mj-label">Сайт</div>
+
+                  {toStr(selected.site).trim() ? (
+                    <button
+                      type="button"
+                      className="mj-vac-btn mj-vac-btn--ghost"
+                      style={{
+                        width: "100%",
+                        borderRadius: 14,
+                        padding: "12px 16px",
+                        fontWeight: 900,
+                        cursor: "pointer",
+                        border: "1px solid rgba(0,0,0,0.18)",
+                        background: "rgba(0,0,0,0.04)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openCompanySite(selected.site);
+                      }}
+                    >
+                      Открыть сайт
+                    </button>
+                  ) : (
+                    <div>—</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
