@@ -6,6 +6,8 @@ import "../assets/styles/vacancies-mospolyjob.css";
 
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import SkillsInput from "../components/ui/SkillsInput";
+import SkillBadges from "../components/ui/SkillBadges";
 
 import wave from "../assets/images/wave-white.png";
 import spiral from "../assets/images/spiral.png";
@@ -25,6 +27,7 @@ type UserProfile = {
 
   description?: string;
   profession_category?: string;
+  skill_slugs?: string[];
 
   role?: string;
 };
@@ -132,6 +135,7 @@ export default function Users() {
     limit: DEFAULT_LIMIT,
     category: "",
     search_name: "",
+    skill_slugs: [] as string[],
   });
 
   const [loading, setLoading] = useState(false);
@@ -165,6 +169,7 @@ export default function Users() {
     const limit = DEFAULT_LIMIT;
 
     const category = String(merged.category || "").trim();
+    const skillSlugs = (merged.skill_slugs || []).filter(Boolean);
 
     setFilters({ ...merged, page, limit });
 
@@ -172,7 +177,12 @@ export default function Users() {
     setError("");
 
     try {
-      const qs = buildQuery({ page, limit, category });
+      const qs = buildQuery({
+        page,
+        limit,
+        category,
+        skill_slugs: skillSlugs.length ? skillSlugs.join(",") : "",
+      });
 
       const resp: any = await apiGateway({
         method: "GET",
@@ -227,7 +237,7 @@ export default function Users() {
   }, [rawUsers, filters.search_name]);
 
   const reset = () => {
-    const base = { page: 1, limit: DEFAULT_LIMIT, category: "", search_name: "" };
+    const base = { page: 1, limit: DEFAULT_LIMIT, category: "", search_name: "", skill_slugs: [] as string[] };
     setFilters(base);
     fetchUsers(base);
   };
@@ -285,6 +295,15 @@ export default function Users() {
             </div>
 
             <div aria-hidden />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label className="mj-vac-label">Навыки</label>
+            <SkillsInput
+              value={filters.skill_slugs}
+              onChange={(slugs) => setFilters((s) => ({ ...s, skill_slugs: slugs }))}
+              placeholder="Например: go, postgresql, docker"
+            />
           </div>
 
           <div
@@ -391,6 +410,12 @@ export default function Users() {
                 </div>
 
                 <h3>{name}</h3>
+
+                {Array.isArray(u.skill_slugs) && u.skill_slugs.length ? (
+                  <div style={{ marginTop: 6 }}>
+                    <SkillBadges slugs={u.skill_slugs.slice(0, 5)} />
+                  </div>
+                ) : null}
 
                 {category ? (
                   <div

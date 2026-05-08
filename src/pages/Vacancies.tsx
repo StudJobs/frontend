@@ -20,6 +20,7 @@ import {
   PositionItem,
 } from "../api/vacancies";
 import SkillBadges from "../components/ui/SkillBadges";
+import SkillsInput from "../components/ui/SkillsInput";
 
 const money = (n?: number) =>
   typeof n === "number" && !Number.isNaN(n)
@@ -330,6 +331,7 @@ export default function Vacancies() {
 
   const [salaryFrom, setSalaryFrom] = useState<string>("");
   const [salaryTo, setSalaryTo] = useState<string>("");
+  const [skillSlugs, setSkillSlugs] = useState<string[]>([]);
 
   const [companyNameById, setCompanyNameById] = useState<Record<string, string>>(
     {}
@@ -412,6 +414,7 @@ export default function Vacancies() {
       min_experience: numOrUndef((merged as any).min_experience),
       max_experience: numOrUndef((merged as any).max_experience),
       search_title: (merged.search_title as any)?.trim?.() || undefined,
+      skill_slugs: skillSlugs.length ? skillSlugs.join(",") : undefined,
     };
 
     setFilters({ ...merged, min_salary: minS, max_salary: maxS });
@@ -496,6 +499,7 @@ export default function Vacancies() {
     setFilters(base);
     setSalaryFrom("");
     setSalaryTo("");
+    setSkillSlugs([]);
     setShowAdvanced(false);
     applyFilters(base);
   };
@@ -717,6 +721,15 @@ export default function Vacancies() {
               ))}
             </datalist>
           ) : null}
+
+          <div style={{ marginTop: 12 }}>
+            <label className="mj-vac-label">Навыки</label>
+            <SkillsInput
+              value={skillSlugs}
+              onChange={setSkillSlugs}
+              placeholder="Например: go, react, postgresql"
+            />
+          </div>
 
           <button
             type="button"

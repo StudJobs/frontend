@@ -43,6 +43,8 @@ export type VacancyListParams = {
   min_experience?: number;
   max_experience?: number;
   search_title?: string;
+  // CSV slug-ов навыков. Передаётся в Gateway, который роутит в Search-сервис (Elasticsearch).
+  skill_slugs?: string;
 };
 
 export type PositionItem = {
