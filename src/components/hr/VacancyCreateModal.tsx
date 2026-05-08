@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import "../../assets/styles/vacancy-modal.css";
 import { VacanciesAPI, VacancyItem } from "../../api/vacancies";
 import SkillsInput from "../ui/SkillsInput";
 
