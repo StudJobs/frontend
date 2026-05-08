@@ -5,6 +5,22 @@ export type AchievementItem = {
   name: string;
   file_name: string;
   url: string;
+  type?: number;
+};
+
+export const ACHIEVEMENT_TYPES: Array<{ value: number; label: string }> = [
+  { value: 0, label: "Без типа" },
+  { value: 1, label: "Пет-проект" },
+  { value: 2, label: "Курсовая" },
+  { value: 3, label: "Хакатон" },
+  { value: 4, label: "Курс / сертификат" },
+  { value: 5, label: "Микрозадача" },
+  { value: 6, label: "Иное" },
+];
+
+export const achievementTypeLabel = (type?: number): string => {
+  const entry = ACHIEVEMENT_TYPES.find((t) => t.value === (type ?? 0));
+  return entry ? entry.label : "Без типа";
 };
 
 const unwrap = (resp: any) => resp?.data ?? resp;
@@ -71,13 +87,14 @@ export const AchievementsAPI = {
         name,
         file_name: fileName,
         url,
+        type: typeof item.type === "number" ? item.type : undefined,
       });
     }
 
     return result;
   },
 
-  async upload(file: File, displayName?: string) {
+  async upload(file: File, displayName?: string, type: number = 0) {
     const name = displayName || file.name;
 
     const metaResp = await apiGateway({
@@ -88,6 +105,7 @@ export const AchievementsAPI = {
         file_size: file.size,
         file_type: file.type || "application/octet-stream",
         name,
+        type,
       },
     });
 

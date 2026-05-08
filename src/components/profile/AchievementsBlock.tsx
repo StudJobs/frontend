@@ -7,7 +7,12 @@ import React, {
 } from "react";
 import "../../assets/styles/global.css";
 import "../../assets/styles/profile-mospolyjob.css";
-import { AchievementsAPI, AchievementItem } from "../../api/achievements";
+import {
+  AchievementsAPI,
+  AchievementItem,
+  ACHIEVEMENT_TYPES,
+  achievementTypeLabel,
+} from "../../api/achievements";
 
 export type AchievementsBlockHandle = {
   openFileDialog: () => void;
@@ -24,6 +29,7 @@ const AchievementsBlock = forwardRef<
   const [items, setItems] = useState<AchievementItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<number>(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -67,7 +73,7 @@ const AchievementsBlock = forwardRef<
     try {
       setLoading(true);
       setError("");
-      await AchievementsAPI.upload(file, file.name);
+      await AchievementsAPI.upload(file, file.name, selectedType);
       await loadAchievements();
     } catch (err) {
       console.error("Ошибка загрузки достижения:", err);
@@ -103,6 +109,20 @@ const AchievementsBlock = forwardRef<
         onChange={handleFileChange}
       />
 
+      <div className="achievement-type-row" style={{ marginBottom: 8 }}>
+        <label style={{ marginRight: 8 }}>Тип нового достижения:</label>
+        <select
+          value={selectedType}
+          onChange={(e) => setSelectedType(Number(e.target.value))}
+        >
+          {ACHIEVEMENT_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {loading && <p>Загружаем достижения...</p>}
       {error && <p className="profile-error">{error}</p>}
 
@@ -122,6 +142,22 @@ const AchievementsBlock = forwardRef<
               >
                 {a.name || a.file_name}
               </a>
+
+              {typeof a.type === "number" && a.type > 0 && (
+                <span
+                  className="achievement-type-badge"
+                  style={{
+                    marginLeft: 8,
+                    fontSize: 12,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    background: "#eef",
+                    color: "#225",
+                  }}
+                >
+                  {achievementTypeLabel(a.type)}
+                </span>
+              )}
 
               <button
                 type="button"
