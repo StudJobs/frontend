@@ -42,6 +42,7 @@ export default function ProfileEdit() {
     email: "",
     telegram: "",
     profile: "",
+    educationInstitution: "",
     description: "",
   });
 
@@ -62,6 +63,7 @@ export default function ProfileEdit() {
           email: data.email ?? "",
           telegram: data.telegram ?? data.tg ?? "",
           profile: data.profession_category ?? data.specialization ?? "",
+          educationInstitution: data.education_institution ?? "",
           description: data.description ?? "",
         }));
 
@@ -214,6 +216,7 @@ export default function ProfileEdit() {
         email: formData.email.trim() || undefined,
         telegram: normalizeTelegram(formData.telegram),
         profession_category: formData.profile || undefined,
+        education_institution: formData.educationInstitution.trim() || undefined,
         description: formData.description || undefined,
       };
 
@@ -368,6 +371,17 @@ export default function ProfileEdit() {
                 placeholder="@username"
               />
             </div>
+          </div>
+
+          <h3 className="subsection-title">Образование</h3>
+          <div className="form-field">
+            <label className="label-title">Учебное заведение</label>
+            <input
+              name="educationInstitution"
+              value={formData.educationInstitution}
+              onChange={handleChange}
+              placeholder="Например, МИРЭА"
+            />
           </div>
 
           <h3 className="subsection-title">О себе</h3>

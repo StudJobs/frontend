@@ -21,6 +21,7 @@ type UserProfile = {
   description?: string;
   profession_category?: string;
   specialization?: string;
+  education_institution?: string;
 };
 
 const unwrap = (resp: any) => resp?.data ?? resp;
@@ -244,6 +245,9 @@ export default function Profile() {
                   </li>
                   <li>
                     Профиль: {p.profession_category || p.specialization || "—"}
+                  </li>
+                  <li>
+                    Учебное заведение: {p.education_institution || "—"}
                   </li>
                 </ul>
 
