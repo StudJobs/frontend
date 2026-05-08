@@ -101,22 +101,31 @@ export const AchievementsAPI = {
         continue;
       }
 
-      let url = "";
-      try {
-        const dlResp = await apiGateway({
-          method: "GET",
-          url: `/user/achievements/${encodeURIComponent(id)}/download`,
-        });
-        const dlData = unwrap(dlResp);
+      const fileType: string = String(item.file_type ?? "");
+      const isExternal = fileType === "external/url";
 
-        url =
-          dlData.download_url ??
-          dlData.url ??
-          dlData.direct_url ??
-          dlData.link ??
-          "";
-      } catch (e) {
-        console.warn("Не удалось получить download_url для достижения", id, e);
+      let url = "";
+      if (isExternal) {
+        // Для F5-ачивок (микрозадачи) ссылка на решение лежит прямо в file_name —
+        // download endpoint не нужен (файла в S3 нет, есть только URL).
+        url = fileName;
+      } else {
+        try {
+          const dlResp = await apiGateway({
+            method: "GET",
+            url: `/user/achievements/${encodeURIComponent(id)}/download`,
+          });
+          const dlData = unwrap(dlResp);
+
+          url =
+            dlData.download_url ??
+            dlData.url ??
+            dlData.direct_url ??
+            dlData.link ??
+            "";
+        } catch (e) {
+          console.warn("Не удалось получить download_url для достижения", id, e);
+        }
       }
 
       result.push({
