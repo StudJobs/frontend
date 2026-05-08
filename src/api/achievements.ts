@@ -225,7 +225,13 @@ export const AchievementsAPI = {
     await apiGateway({
       method: "POST",
       url: confirmUrl,
-      data: { s3_key: s3Key },
+      data: {
+        s3_key: s3Key,
+        file_name: file.name,
+        file_type: file.type || "application/octet-stream",
+        file_size: file.size,
+        type,
+      },
     });
 
     return { id };
