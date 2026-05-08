@@ -1,7 +1,11 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
-export type RoleType = "ROLE_STUDENT" | "ROLE_EMPLOYER" | "ROLE_COMPANY_OWNER";
+export type RoleType =
+  | "ROLE_STUDENT"
+  | "ROLE_EMPLOYER"
+  | "ROLE_COMPANY_OWNER"
+  | "ROLE_EXPERT";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -32,7 +36,8 @@ const readRoleFromStorage = (): RoleType | null => {
   if (
     role === "ROLE_STUDENT" ||
     role === "ROLE_EMPLOYER" ||
-    role === "ROLE_COMPANY_OWNER"
+    role === "ROLE_COMPANY_OWNER" ||
+    role === "ROLE_EXPERT"
   ) {
     return role;
   }
@@ -66,6 +71,14 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
 
     if (!ok) {
       return <Navigate to="/company-profile" replace />;
+    }
+  }
+
+  if (userRole === "ROLE_EXPERT") {
+    const p = location.pathname;
+    const ok = p === "/expert" || p.startsWith("/expert/");
+    if (!ok) {
+      return <Navigate to="/expert" replace />;
     }
   }
 

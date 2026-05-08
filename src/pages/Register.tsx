@@ -6,8 +6,12 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { apiGateway } from "../api/apiGateway";
 
-type BackendRole = "ROLE_STUDENT" | "ROLE_EMPLOYER" | "ROLE_COMPANY_OWNER";
-type UiRole = "candidate" | "hr" | "company";
+type BackendRole =
+  | "ROLE_STUDENT"
+  | "ROLE_EMPLOYER"
+  | "ROLE_COMPANY_OWNER"
+  | "ROLE_EXPERT";
+type UiRole = "candidate" | "hr" | "company" | "expert";
 
 type FieldErrors = {
   email: string;
@@ -64,6 +68,8 @@ export default function Register() {
       navigate("/hr-profile", { replace: true });
     } else if (storedRole === "ROLE_COMPANY_OWNER") {
       navigate("/company-profile", { replace: true });
+    } else if (storedRole === "ROLE_EXPERT") {
+      navigate("/expert", { replace: true });
     } else {
       navigate("/profile", { replace: true });
     }
@@ -142,6 +148,8 @@ export default function Register() {
         ? "ROLE_EMPLOYER"
         : selectedRole === "company"
         ? "ROLE_COMPANY_OWNER"
+        : selectedRole === "expert"
+        ? "ROLE_EXPERT"
         : "ROLE_STUDENT";
 
     try {
@@ -274,6 +282,21 @@ export default function Register() {
                 <span className="register-role-title">Компания</span>
                 <span className="register-role-subtitle">
                   (владелец компании)
+                </span>
+              </div>
+            </label>
+
+            <label className="register-role">
+              <input
+                type="checkbox"
+                className="register-role-input"
+                checked={selectedRole === "expert"}
+                onChange={() => setSelectedRole("expert")}
+              />
+              <div className="register-role-text">
+                <span className="register-role-title">Эксперт</span>
+                <span className="register-role-subtitle">
+                  (валидирую портфолио студентов)
                 </span>
               </div>
             </label>

@@ -12,13 +12,19 @@ const Header: React.FC = () => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
-    const isHr =
-      role === "hr" || role === "ROLE_EMPLOYER" || role === "ROLE_COMPANY";
-
-    if (token && role) {
-      navigate(isHr ? "/hr-profile" : "/profile");
-    } else {
+    if (!token || !role) {
       navigate("/auth");
+      return;
+    }
+
+    if (role === "ROLE_EMPLOYER" || role === "hr") {
+      navigate("/hr-profile");
+    } else if (role === "ROLE_COMPANY_OWNER" || role === "ROLE_COMPANY") {
+      navigate("/company-profile");
+    } else if (role === "ROLE_EXPERT") {
+      navigate("/expert");
+    } else {
+      navigate("/profile");
     }
   };
 

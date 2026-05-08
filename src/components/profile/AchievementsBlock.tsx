@@ -12,7 +12,23 @@ import {
   AchievementItem,
   ACHIEVEMENT_TYPES,
   achievementTypeLabel,
+  VERIFICATION_STATUS,
+  verificationStatusLabel,
 } from "../../api/achievements";
+
+const verificationBadgeColors = (s?: number): React.CSSProperties => {
+  switch (s) {
+    case VERIFICATION_STATUS.APPROVED:
+      return { background: "#e6f7ec", color: "#136f3b" };
+    case VERIFICATION_STATUS.PENDING:
+      return { background: "#fff8e1", color: "#7a5a00" };
+    case VERIFICATION_STATUS.REJECTED:
+      return { background: "#fdecec", color: "#a02223" };
+    case VERIFICATION_STATUS.DRAFT:
+    default:
+      return { background: "#eee", color: "#444" };
+  }
+};
 
 export type AchievementsBlockHandle = {
   openFileDialog: () => void;
@@ -99,6 +115,21 @@ const AchievementsBlock = forwardRef<
     }
   };
 
+  const handleSubmitForReview = async (numericId?: number) => {
+    if (!numericId) return;
+    try {
+      setLoading(true);
+      setError("");
+      await AchievementsAPI.submitForReview(numericId);
+      await loadAchievements();
+    } catch (err: any) {
+      console.error("Ошибка отправки на ревью:", err);
+      setError(err?.message || "Не удалось отправить на ревью.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="profile-achievements-block">
       <input
@@ -132,43 +163,97 @@ const AchievementsBlock = forwardRef<
 
       {items.length > 0 && (
         <ul className="achievements-list">
-          {items.map((a) => (
-            <li key={a.id} className="achievement-item">
-              <a
-                href={a.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="achievement-link"
-              >
-                {a.name || a.file_name}
-              </a>
+          {items.map((a) => {
+            const status = a.verification_status;
+            const canSubmit =
+              !!a.numeric_id &&
+              (status === VERIFICATION_STATUS.DRAFT ||
+                status === VERIFICATION_STATUS.REJECTED ||
+                status === undefined);
 
-              {typeof a.type === "number" && a.type > 0 && (
-                <span
-                  className="achievement-type-badge"
-                  style={{
-                    marginLeft: 8,
-                    fontSize: 12,
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                    background: "#eef",
-                    color: "#225",
-                  }}
+            return (
+              <li key={a.id} className="achievement-item">
+                <a
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="achievement-link"
                 >
-                  {achievementTypeLabel(a.type)}
-                </span>
-              )}
+                  {a.name || a.file_name}
+                </a>
 
-              <button
-                type="button"
-                className="achievement-delete-btn"
-                onClick={() => handleDelete(a.id)}
-                aria-label="Удалить достижение"
-              >
-                ✕
-              </button>
-            </li>
-          ))}
+                {typeof a.type === "number" && a.type > 0 && (
+                  <span
+                    className="achievement-type-badge"
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 12,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      background: "#eef",
+                      color: "#225",
+                    }}
+                  >
+                    {achievementTypeLabel(a.type)}
+                  </span>
+                )}
+
+                {typeof status === "number" && status > 0 && (
+                  <span
+                    title={a.review_comment || ""}
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 12,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      ...verificationBadgeColors(status),
+                    }}
+                  >
+                    {verificationStatusLabel(status)}
+                  </span>
+                )}
+
+                {canSubmit ? (
+                  <button
+                    type="button"
+                    className="mj-vac-btn mj-vac-btn--ghost"
+                    style={{
+                      marginLeft: 8,
+                      minHeight: 28,
+                      padding: "4px 10px",
+                      fontSize: 12,
+                    }}
+                    onClick={() => handleSubmitForReview(a.numeric_id)}
+                  >
+                    На проверку
+                  </button>
+                ) : null}
+
+                {status === VERIFICATION_STATUS.REJECTED && a.review_comment ? (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 12,
+                      color: "#a02223",
+                      width: "100%",
+                    }}
+                  >
+                    Комментарий эксперта: {a.review_comment}
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="achievement-delete-btn"
+                  onClick={() => handleDelete(a.id)}
+                  aria-label="Удалить достижение"
+                >
+                  ✕
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

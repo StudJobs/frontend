@@ -6,7 +6,11 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { apiGateway } from "../api/apiGateway";
 
-type BackendRole = "ROLE_STUDENT" | "ROLE_EMPLOYER" | "ROLE_COMPANY";
+type BackendRole =
+  | "ROLE_STUDENT"
+  | "ROLE_EMPLOYER"
+  | "ROLE_COMPANY_OWNER"
+  | "ROLE_EXPERT";
 
 type FieldErrors = {
   email: string;
@@ -60,7 +64,15 @@ export default function Auth() {
 
     const storedRole = (localStorage.getItem("role") || "").trim() as BackendRole;
 
-    setRedirectTo(storedRole === "ROLE_EMPLOYER" ? "/hr-profile" : "/profile");
+    setRedirectTo(
+      storedRole === "ROLE_EMPLOYER"
+        ? "/hr-profile"
+        : storedRole === "ROLE_COMPANY_OWNER"
+        ? "/company-profile"
+        : storedRole === "ROLE_EXPERT"
+        ? "/expert"
+        : "/profile"
+    );
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,7 +139,15 @@ export default function Auth() {
       const finalRole: BackendRole = ((role || guessedRole) as BackendRole);
       localStorage.setItem("role", finalRole);
 
-      setRedirectTo(finalRole === "ROLE_EMPLOYER" ? "/hr-profile" : "/profile");
+      setRedirectTo(
+        finalRole === "ROLE_EMPLOYER"
+          ? "/hr-profile"
+          : finalRole === "ROLE_COMPANY_OWNER"
+          ? "/company-profile"
+          : finalRole === "ROLE_EXPERT"
+          ? "/expert"
+          : "/profile"
+      );
     } catch (err: any) {
       console.error("Ошибка авторизации:", err);
 
