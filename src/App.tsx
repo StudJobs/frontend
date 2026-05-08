@@ -12,6 +12,8 @@ import CompanyProfileEdit from "./pages/CompanyProfileEdit";
 import CompanyProfile from "./pages/CompanyProfile";
 import Companies from "./pages/Companies";
 import Users from "./pages/Users";
+import Tasks from "./pages/Tasks";
+import HRTasks from "./pages/HRTasks";
 
 export default function App() {
   return (
@@ -97,6 +99,24 @@ export default function App() {
           element={
             <PrivateRoute>
               <Users />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/tasks"
+          element={
+            <PrivateRoute>
+              <Tasks />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/hr/tasks"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER", "ROLE_COMPANY_OWNER"]}>
+              <HRTasks />
             </PrivateRoute>
           }
         />
