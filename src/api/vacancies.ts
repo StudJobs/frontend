@@ -16,6 +16,8 @@ export type VacancyItem = {
 
   create_at?: string;
   created_at?: string;
+
+  skill_slugs?: string[];
 };
 
 export type VacancyPagination = {

@@ -7,6 +7,7 @@ import Footer from "../components/layout/Footer";
 import avatarDefault from "../assets/images/человек.png";
 import { apiGateway } from "../api/apiGateway";
 import { AchievementsAPI } from "../api/achievements";
+import SkillsInput from "../components/ui/SkillsInput";
 
 const extractAvatarUrl = (fileInfo: any): string | undefined =>
   fileInfo?.download_url || fileInfo?.direct_url || fileInfo?.url;
@@ -48,6 +49,7 @@ export default function ProfileEdit() {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [message, setMessage] = useState("");
+  const [skillSlugs, setSkillSlugs] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -68,6 +70,7 @@ export default function ProfileEdit() {
         }));
 
         if (data.avatar_id) setAvatarId(String(data.avatar_id));
+        if (Array.isArray(data.skill_slugs)) setSkillSlugs(data.skill_slugs);
 
         try {
           const list = await AchievementsAPI.list();
@@ -218,6 +221,7 @@ export default function ProfileEdit() {
         profession_category: formData.profile || undefined,
         education_institution: formData.educationInstitution.trim() || undefined,
         description: formData.description || undefined,
+        skill_slugs: skillSlugs.length ? skillSlugs : undefined,
       };
 
       const resp = await apiGateway({
@@ -382,6 +386,14 @@ export default function ProfileEdit() {
               onChange={handleChange}
               placeholder="Например, МИРЭА"
             />
+          </div>
+
+          <h3 className="subsection-title">Навыки</h3>
+          <div className="form-field">
+            <SkillsInput value={skillSlugs} onChange={setSkillSlugs} />
+            <p style={{ fontSize: 12, opacity: 0.65, marginTop: 6 }}>
+              Введите название технологии — Go, React, PostgreSQL и т.п. — и выберите из подсказок.
+            </p>
           </div>
 
           <h3 className="subsection-title">О себе</h3>

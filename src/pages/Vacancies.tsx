@@ -19,6 +19,7 @@ import {
   VacancyPagination,
   PositionItem,
 } from "../api/vacancies";
+import SkillBadges from "../components/ui/SkillBadges";
 
 const money = (n?: number) =>
   typeof n === "number" && !Number.isNaN(n)
@@ -894,6 +895,12 @@ export default function Vacancies() {
                     {subtitleParts.join(" • ")}
                   </div>
                 ) : null}
+
+                {Array.isArray((v as any).skill_slugs) && (v as any).skill_slugs.length ? (
+                  <div style={{ marginTop: 10 }}>
+                    <SkillBadges slugs={(v as any).skill_slugs as string[]} />
+                  </div>
+                ) : null}
               </article>
             );
           })}
@@ -962,6 +969,17 @@ export default function Vacancies() {
               <div className="mj-field">
                 <div className="mj-label">Опубликовано</div>
                 <div>{formatDateHuman(createdAt)}</div>
+              </div>
+
+              <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
+                <div className="mj-label">Требуемые навыки</div>
+                <SkillBadges
+                  slugs={
+                    Array.isArray((selected as any).skill_slugs)
+                      ? ((selected as any).skill_slugs as string[])
+                      : []
+                  }
+                />
               </div>
 
               <div className="mj-field" style={{ gridColumn: "1 / -1" }}>

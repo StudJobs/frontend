@@ -10,6 +10,7 @@ import AchievementsBlock, {
   AchievementsBlockHandle,
 } from "../components/profile/AchievementsBlock";
 import { AchievementsAPI, AchievementItem } from "../api/achievements";
+import SkillBadges from "../components/ui/SkillBadges";
 
 type UserProfile = {
   first_name?: string;
@@ -22,6 +23,7 @@ type UserProfile = {
   profession_category?: string;
   specialization?: string;
   education_institution?: string;
+  skill_slugs?: string[];
 };
 
 const unwrap = (resp: any) => resp?.data ?? resp;
@@ -282,6 +284,11 @@ export default function Profile() {
                     ? p.description
                     : "Пользователь пока не заполнил описание для профиля."}
                 </p>
+              </div>
+
+              <div className="profile-about" style={{ marginTop: 16 }}>
+                <h2 className="profile-about-title">Навыки:</h2>
+                <SkillBadges slugs={p.skill_slugs || []} />
               </div>
 
               <div className="profile-achievements">

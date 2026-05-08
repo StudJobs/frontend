@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import "../../assets/styles/vacancy-modal.css";
 import { VacanciesAPI, VacancyItem } from "../../api/vacancies";
+import SkillsInput from "../ui/SkillsInput";
 
 type Props = {
   open: boolean;
@@ -18,6 +19,7 @@ const toNumberOrUndefined = (v: string) => {
 export default function VacancyCreateModal({ open, onClose, onCreated }: Props) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [skillSlugs, setSkillSlugs] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -59,6 +61,7 @@ export default function VacancyCreateModal({ open, onClose, onCreated }: Props) 
       attachment_id: form.attachment_id.trim() || undefined,
       attachment_url: form.attachment_url.trim() || undefined,
       company_id: form.company_id.trim() || undefined,
+      skill_slugs: skillSlugs.length ? skillSlugs : undefined,
     };
 
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
@@ -180,6 +183,11 @@ export default function VacancyCreateModal({ open, onClose, onCreated }: Props) 
                 placeholder="string"
               />
             </div>
+          </div>
+
+          <div className="mj-field">
+            <label className="mj-label">Требуемые навыки</label>
+            <SkillsInput value={skillSlugs} onChange={setSkillSlugs} />
           </div>
 
           <div className="mj-modal-actions">
