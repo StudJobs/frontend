@@ -15,6 +15,7 @@ import Users from "./pages/Users";
 import Tasks from "./pages/Tasks";
 import HRTasks from "./pages/HRTasks";
 import Expert from "./pages/Expert";
+import PublicProfile from "./pages/PublicProfile";
 
 export default function App() {
   return (
@@ -127,6 +128,15 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ROLE_EXPERT"]}>
               <Expert />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/u/:uuid"
+          element={
+            <PrivateRoute>
+              <PublicProfile />
             </PrivateRoute>
           }
         />

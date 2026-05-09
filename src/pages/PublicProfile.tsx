@@ -1,0 +1,396 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import "../assets/styles/global.css";
+import "../assets/styles/profile-mospolyjob.css";
+import Header from "../components/layout/Header";
+import Footer from "../components/layout/Footer";
+import avatarFallback from "../assets/images/человек.png";
+import { UsersAPI, UserListItem } from "../api/users";
+import { Skill, SkillsAPI } from "../api/skills";
+import {
+  AchievementItem,
+  achievementTypeLabel,
+  VERIFICATION_STATUS,
+} from "../api/achievements";
+
+type LevelKind = "bronze" | "silver" | "gold" | "expert";
+
+type Level = {
+  kind: LevelKind;
+  title: string;
+  description: string;
+  threshold: number;
+};
+
+const LEVELS: Level[] = [
+  { kind: "bronze", title: "Знакомство", description: "1 верифицированный проект", threshold: 1 },
+  { kind: "silver", title: "Опыт", description: "3 верифицированных проекта", threshold: 3 },
+  { kind: "gold", title: "Профи", description: "5 верифицированных проектов", threshold: 5 },
+  { kind: "expert", title: "Эксперт", description: "10+ верифицированных проектов", threshold: 10 },
+];
+
+const computeLevel = (verifiedCount: number): Level | null => {
+  let current: Level | null = null;
+  for (const lvl of LEVELS) {
+    if (verifiedCount >= lvl.threshold) current = lvl;
+  }
+  return current;
+};
+
+export default function PublicProfile() {
+  const { uuid = "" } = useParams<{ uuid: string }>();
+  const [profile, setProfile] = useState<UserListItem | null>(null);
+  const [achievements, setAchievements] = useState<AchievementItem[]>([]);
+  const [skillMap, setSkillMap] = useState<Record<string, Skill>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!uuid) return;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [user, ach] = await Promise.all([
+          UsersAPI.get(uuid).catch(() => null),
+          UsersAPI.listAchievements(uuid).catch(() => [] as AchievementItem[]),
+        ]);
+
+        if (cancelled) return;
+
+        if (!user) {
+          setError("Профиль не найден или скрыт владельцем.");
+          setProfile(null);
+          setAchievements([]);
+          return;
+        }
+
+        setProfile(user);
+        // Публичный профиль показывает только подтверждённые ачивки.
+        // DRAFT/PENDING/REJECTED — личное дело владельца.
+        setAchievements(
+          (ach || []).filter(
+            (a) => a.verification_status === VERIFICATION_STATUS.APPROVED
+          )
+        );
+
+        const slugs = user.skill_slugs || [];
+        if (slugs.length) {
+          try {
+            const items = await SkillsAPI.bulk(slugs);
+            if (cancelled) return;
+            const map: Record<string, Skill> = {};
+            items.forEach((it) => {
+              if (it.slug) map[it.slug] = it;
+            });
+            setSkillMap(map);
+          } catch {
+            /* пустая мапа — будут показаны slug'и */
+          }
+        }
+      } catch (e: any) {
+        console.error("PublicProfile load failed", e);
+        setError("Не удалось загрузить профиль.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uuid]);
+
+  const verifiedCount = achievements.length;
+  const level = useMemo(() => computeLevel(verifiedCount), [verifiedCount]);
+
+  const fullName =
+    profile && (profile.first_name || profile.last_name)
+      ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+      : "Пользователь";
+
+  const avatar = profile?.avatar_url || avatarFallback;
+  const skills = profile?.skill_slugs || [];
+
+  // Skill graph: каждая skill = ячейка. Уровень "verified" — если у юзера хотя бы
+  // одна одобренная ачивка (наличие верификаций общее, не пер-скилл, т.к. в схеме
+  // нет achievement→skill mapping).
+  const totalSkillCount = Math.max(skills.length, 1);
+
+  return (
+    <div className="page-frame">
+      <Header />
+      <section className="profile-section">
+        {loading ? (
+          <div className="empty-state">
+            <span className="empty-state-icon" aria-hidden="true">
+              ⏳
+            </span>
+            <div className="empty-state-title">Загружаем профиль...</div>
+          </div>
+        ) : error ? (
+          <div className="empty-state">
+            <span className="empty-state-icon" aria-hidden="true">
+              !
+            </span>
+            <div className="empty-state-title">Профиль не найден</div>
+            <div className="empty-state-text">{error}</div>
+            <Link to="/users" className="profile-btn">
+              К списку студентов
+            </Link>
+          </div>
+        ) : profile ? (
+          <>
+            {/* Header card */}
+            <div className="profile-card">
+              <div className="profile-photo">
+                <img src={avatar} alt={fullName} />
+              </div>
+              <div className="profile-info">
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <h1 className="profile-name">{fullName}</h1>
+                  {level ? (
+                    <span
+                      className={`level-badge level-badge--${level.kind}`}
+                      title={level.description}
+                    >
+                      <span className="level-badge-icon" aria-hidden="true" />
+                      {level.title}
+                    </span>
+                  ) : null}
+                </div>
+
+                {profile.profession_category || profile.specialization ? (
+                  <div
+                    style={{
+                      color: "var(--fg-muted)",
+                      fontSize: 14,
+                      marginTop: 4,
+                    }}
+                  >
+                    {[profile.profession_category, profile.specialization]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                ) : null}
+
+                {profile.education_institution ? (
+                  <div
+                    style={{
+                      color: "var(--fg-subtle)",
+                      fontSize: 13,
+                      marginTop: 2,
+                    }}
+                  >
+                    {profile.education_institution}
+                  </div>
+                ) : null}
+
+                {profile.description ? (
+                  <p
+                    style={{
+                      color: "var(--fg-muted)",
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      marginTop: 16,
+                      maxWidth: 720,
+                    }}
+                  >
+                    {profile.description}
+                  </p>
+                ) : null}
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 24,
+                    flexWrap: "wrap",
+                    marginTop: 20,
+                  }}
+                >
+                  <Stat label="Подтверждённых проектов" value={verifiedCount} />
+                  <Stat label="Навыков" value={skills.length} />
+                </div>
+
+                {profile.resume_url ? (
+                  <div style={{ marginTop: 16 }}>
+                    <a
+                      className="profile-btn"
+                      href={profile.resume_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Скачать резюме
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Skill graph */}
+            <div>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  marginBottom: 12,
+                }}
+              >
+                Стек навыков
+              </h2>
+              {skills.length === 0 ? (
+                <div className="empty-state">
+                  <span className="empty-state-icon" aria-hidden="true">
+                    +
+                  </span>
+                  <div className="empty-state-title">
+                    Навыки ещё не указаны
+                  </div>
+                  <div className="empty-state-text">
+                    Когда студент добавит компетенции, они появятся здесь —
+                    с зелёной подсветкой для верифицированных.
+                  </div>
+                </div>
+              ) : (
+                <div className="skill-graph">
+                  {skills.map((slug) => {
+                    const meta = skillMap[slug];
+                    const verified = verifiedCount > 0;
+                    const widthPct = verified
+                      ? Math.min(100, Math.round((verifiedCount / 5) * 100))
+                      : 12;
+                    return (
+                      <div
+                        key={slug}
+                        className={
+                          verified
+                            ? "skill-graph-cell skill-graph-cell--verified"
+                            : "skill-graph-cell"
+                        }
+                      >
+                        <span className="skill-graph-name">
+                          {meta?.name || slug}
+                        </span>
+                        <span className="skill-graph-count">
+                          {verified ? "Подтверждено" : "Без верификации"}
+                          {totalSkillCount > 0 ? ` · ${verifiedCount}` : ""}
+                        </span>
+                        <span className="skill-graph-bar">
+                          <span
+                            className="skill-graph-bar-fill"
+                            style={{ width: `${widthPct}%` }}
+                          />
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Achievements grid */}
+            <div>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  marginBottom: 12,
+                }}
+              >
+                Подтверждённые проекты ({verifiedCount})
+              </h2>
+              {verifiedCount === 0 ? (
+                <div className="empty-state">
+                  <span className="empty-state-icon" aria-hidden="true">
+                    ☐
+                  </span>
+                  <div className="empty-state-title">
+                    Подтверждённых проектов ещё нет
+                  </div>
+                  <div className="empty-state-text">
+                    После того как эксперт одобрит первый проект из портфолио
+                    или HR закроет микрозадачу, бейдж появится здесь.
+                  </div>
+                </div>
+              ) : (
+                <ul className="achievements-list">
+                  {achievements.map((a) => {
+                    const isLink = !!a.url;
+                    const Body = (
+                      <>
+                        <span className="achievement-link">
+                          {a.name || a.file_name}
+                        </span>
+                        {typeof a.type === "number" && a.type > 0 ? (
+                          <span className="type-badge">
+                            {achievementTypeLabel(a.type)}
+                          </span>
+                        ) : null}
+                        <span className="v-badge v-badge--approved">
+                          Подтверждено
+                        </span>
+                      </>
+                    );
+                    return (
+                      <li key={a.id} className="achievement-item">
+                        {isLink ? (
+                          <a
+                            href={a.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "contents",
+                              textDecoration: "none",
+                            }}
+                          >
+                            {Body}
+                          </a>
+                        ) : (
+                          Body
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </>
+        ) : null}
+      </section>
+      <Footer />
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 22,
+          fontWeight: 700,
+          color: "var(--fg)",
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {value}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--fg-muted)", marginTop: 2 }}>
+        {label}
+      </div>
+    </div>
+  );
+}

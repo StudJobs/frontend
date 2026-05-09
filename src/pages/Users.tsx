@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-hr-mospolyjob.css";
 import "../assets/styles/vacancies-mospolyjob.css";
@@ -484,15 +484,8 @@ export default function Users() {
 
               <button
                 type="button"
+                className="mj-btn mj-btn--ghost"
                 onClick={() => setSelected(null)}
-                style={{
-                  background: "transparent",
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  borderRadius: 14,
-                  padding: "10px 14px",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                }}
               >
                 Закрыть
               </button>
@@ -536,17 +529,21 @@ export default function Users() {
               </div>
             </div>
 
-            {toStr(selected.tg || selected.telegram).trim() ? (
-              <div style={{ marginTop: 12 }}>
+            <div className="mj-actions">
+              {selected.id ? (
+                <Link
+                  to={`/u/${selected.id}`}
+                  className="mj-btn mj-btn--primary"
+                  style={{ textDecoration: "none" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Открыть полный профиль →
+                </Link>
+              ) : null}
+              {toStr(selected.tg || selected.telegram).trim() ? (
                 <button
                   type="button"
-                  className="mj-vac-btn"
-                  style={{
-                    width: "100%",
-                    borderRadius: 14,
-                    padding: "12px 16px",
-                    fontWeight: 900,
-                  }}
+                  className="mj-btn mj-btn--ghost"
                   onClick={(e) => {
                     e.stopPropagation();
                     openTg(selected.tg || selected.telegram);
@@ -554,8 +551,8 @@ export default function Users() {
                 >
                   Открыть Telegram
                 </button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

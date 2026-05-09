@@ -1,4 +1,5 @@
 import { apiGateway } from "./apiGateway";
+import { AchievementItem } from "./achievements";
 
 export type UsersListParams = {
   page?: number;
@@ -17,12 +18,14 @@ export type UserListItem = {
   description?: string;
   profession_category?: string;
   specialization?: string;
+  education_institution?: string;
 
   avatar_url?: string;
   avatar_id?: string;
   resume_url?: string;
   resume_id?: string;
 
+  skill_slugs?: string[];
   role?: string;
 };
 
@@ -61,5 +64,47 @@ export const UsersAPI = {
     if (Array.isArray(data?.data)) return { profiles: data.data as UserListItem[] };
 
     return { profiles: [] };
+  },
+
+  async get(id: string): Promise<UserListItem | null> {
+    const data = unwrap(await apiGateway({ method: "GET", url: `/users/${id}` }));
+    if (!data) return null;
+    // backend может вернуть либо профиль напрямую, либо { user: {...} }
+    return (data.user ?? data.profile ?? data) as UserListItem;
+  },
+
+  async listAchievements(id: string): Promise<AchievementItem[]> {
+    const data = unwrap(
+      await apiGateway({ method: "GET", url: `/users/${id}/achievements` })
+    );
+    const raw: any[] = data?.achievements ?? data ?? [];
+    return raw.map((item: any) => {
+      const numericId: number | undefined =
+        typeof item.id === "number"
+          ? item.id
+          : typeof item.id === "string" && /^\d+$/.test(item.id)
+          ? Number(item.id)
+          : undefined;
+      const name: string = String(item.name ?? item.file_name ?? "");
+      const fileName: string = String(item.file_name ?? name);
+      const isExternal = String(item.file_type ?? "") === "external/url";
+      return {
+        id: name || String(numericId ?? ""),
+        numeric_id: numericId,
+        name,
+        file_name: fileName,
+        url: isExternal ? fileName : "",
+        type: typeof item.type === "number" ? item.type : undefined,
+        verification_status:
+          typeof item.verification_status === "number"
+            ? item.verification_status
+            : undefined,
+        reviewed_by: item.reviewed_by ?? undefined,
+        reviewed_at: item.reviewed_at ?? undefined,
+        review_comment: item.review_comment ?? undefined,
+        user_uuid: item.user_uuid ?? undefined,
+        created_at: item.created_at ?? undefined,
+      } as AchievementItem;
+    });
   },
 };
