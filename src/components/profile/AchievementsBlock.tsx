@@ -15,6 +15,7 @@ import {
   VERIFICATION_STATUS,
   verificationStatusLabel,
 } from "../../api/achievements";
+import { useToast } from "../ui/Toast";
 
 const verificationBadgeClass = (s?: number): string => {
   switch (s) {
@@ -46,6 +47,7 @@ const AchievementsBlock = forwardRef<
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [selectedType, setSelectedType] = useState<number>(0);
+  const toast = useToast();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -91,9 +93,14 @@ const AchievementsBlock = forwardRef<
       setError("");
       await AchievementsAPI.upload(file, file.name, selectedType);
       await loadAchievements();
+      toast.success(
+        "Достижение загружено",
+        `«${file.name}» — теперь отправь его эксперту на верификацию.`
+      );
     } catch (err) {
       console.error("Ошибка загрузки достижения:", err);
       setError("Не удалось загрузить достижение. Попробуйте позже.");
+      toast.danger("Не удалось загрузить файл", "Проверьте размер и формат, попробуйте ещё раз.");
     } finally {
       setLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -122,9 +129,14 @@ const AchievementsBlock = forwardRef<
       setError("");
       await AchievementsAPI.submitForReview(numericId);
       await loadAchievements();
+      toast.success(
+        "Отправлено эксперту",
+        "Эксперт увидит задачу в очереди /expert и поставит решение в течение дня."
+      );
     } catch (err: any) {
       console.error("Ошибка отправки на ревью:", err);
       setError(err?.message || "Не удалось отправить на ревью.");
+      toast.danger("Не удалось отправить", err?.message || "Попробуйте позже.");
     } finally {
       setLoading(false);
     }

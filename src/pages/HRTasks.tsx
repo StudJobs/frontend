@@ -21,6 +21,7 @@ import {
   SUBMISSION_STATUS,
   submissionStatusLabel,
 } from "../api/tasks";
+import { useToast } from "../components/ui/Toast";
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -45,6 +46,7 @@ export default function HRTasks() {
   const [tasks, setTasks] = useState<MicroTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useToast();
 
   // Создание задачи
   const [showCreate, setShowCreate] = useState(false);
@@ -107,8 +109,13 @@ export default function HRTasks() {
       setTasks((arr) => [created, ...arr]);
       resetCreateForm();
       setShowCreate(false);
+      toast.success(
+        "Задача опубликована",
+        `«${created.title}» — теперь в /tasks её увидят студенты с подходящими навыками.`
+      );
     } catch (e: any) {
       setCreateErr(e?.message || "Не удалось создать задачу");
+      toast.danger("Не удалось создать", e?.message || "Проверьте поля и попробуйте снова.");
     } finally {
       setCreateBusy(false);
     }
@@ -136,9 +143,16 @@ export default function HRTasks() {
       if (status === SUBMISSION_STATUS.APPROVED && activeTask) {
         await fetchTasks();
         setActiveTask((t) => (t ? { ...t, status: TASK_STATUS.COMPLETED } : t));
+        toast.success(
+          "Решение принято",
+          "У студента автоматически появилась ачивка типа «Микрозадача» со статусом «Подтверждено»."
+        );
+      } else if (status === SUBMISSION_STATUS.REJECTED) {
+        toast.warning("Решение отклонено", "Студент увидит ваш комментарий и сможет переделать.");
       }
     } catch (e: any) {
       setReviewMsg(e?.message || "Не удалось обновить статус");
+      toast.danger("Не удалось обновить статус", e?.message || "Попробуйте позже.");
     } finally {
       setReviewBusy("");
     }

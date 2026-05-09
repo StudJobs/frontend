@@ -12,6 +12,7 @@ import {
   VERIFICATION_STATUS,
   achievementTypeLabel,
 } from "../api/achievements";
+import { useToast } from "../components/ui/Toast";
 
 type DraftReview = { decision: 3 | 4; comment: string };
 
@@ -24,6 +25,7 @@ export default function Expert() {
   const [drafts, setDrafts] = useState<Record<number, DraftReview>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [reviewMsg, setReviewMsg] = useState("");
+  const toast = useToast();
 
   const fetchQueue = async () => {
     setLoading(true);
@@ -68,8 +70,17 @@ export default function Expert() {
           ? "Подтверждено."
           : "Отклонено."
       );
+      if (d.decision === VERIFICATION_STATUS.APPROVED) {
+        toast.success(
+          "Достижение подтверждено",
+          "Студент увидит зелёный бейдж и сможет показать ачивку рекрутерам."
+        );
+      } else {
+        toast.warning("Отклонено", "Комментарий уйдёт студенту, он сможет переделать.");
+      }
     } catch (e: any) {
       setReviewMsg(e?.message || "Не удалось отправить решение");
+      toast.danger("Не удалось отправить решение", e?.message || "Попробуйте позже.");
     } finally {
       setBusy(null);
     }
@@ -119,10 +130,11 @@ export default function Expert() {
               <article
                 key={id || a.id}
                 style={{
-                  border: "1px solid rgba(0,0,0,0.1)",
-                  borderRadius: 14,
-                  padding: 16,
-                  background: "#fff",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: 20,
+                  background: "var(--surface)",
+                  color: "var(--fg)",
                 }}
               >
                 <div

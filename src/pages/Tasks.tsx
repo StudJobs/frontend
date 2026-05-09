@@ -18,6 +18,7 @@ import {
   TASK_STATUS,
   taskStatusLabel,
 } from "../api/tasks";
+import { useToast } from "../components/ui/Toast";
 
 const DEFAULT_LIMIT = 9;
 
@@ -82,6 +83,7 @@ export default function Tasks() {
   const [solutionUrl, setSolutionUrl] = useState("");
   const [solutionComment, setSolutionComment] = useState("");
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   const [actionMsg, setActionMsg] = useState("");
 
   const myId = useMemo(() => getMyId(), []);
@@ -142,10 +144,14 @@ export default function Tasks() {
       const updated = await TasksAPI.apply(selected.id);
       setActionMsg("Задача взята в работу. Загружайте решение по готовности.");
       setSelected(updated);
-      // обновим в списке
       setTasks((arr) => arr.map((t) => (t.id === updated.id ? updated : t)));
+      toast.success(
+        "Задача в работе",
+        `«${updated.title}» — теперь у вас есть deadline и поле для решения.`
+      );
     } catch (e: any) {
       setActionMsg(e?.message || "Не удалось взять задачу");
+      toast.danger("Не удалось взять", e?.message || "Возможно, кто-то уже взял её первым.");
     } finally {
       setBusy(false);
     }
@@ -163,8 +169,13 @@ export default function Tasks() {
       setActionMsg("Решение отправлено на ревью. Ждите ответа HR.");
       setSolutionUrl("");
       setSolutionComment("");
+      toast.success(
+        "Решение отправлено",
+        "HR увидит его в очереди /hr/tasks. После approve ачивка автоматически появится в портфолио."
+      );
     } catch (e: any) {
       setActionMsg(e?.message || "Не удалось отправить решение");
+      toast.danger("Не удалось отправить решение", e?.message || "Проверьте URL и попробуйте снова.");
     } finally {
       setBusy(false);
     }

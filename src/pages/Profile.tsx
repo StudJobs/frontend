@@ -11,6 +11,7 @@ import AchievementsBlock, {
 } from "../components/profile/AchievementsBlock";
 import { AchievementsAPI, AchievementItem } from "../api/achievements";
 import SkillBadges from "../components/ui/SkillBadges";
+import Onboarding from "../components/profile/Onboarding";
 
 type UserProfile = {
   first_name?: string;
@@ -86,6 +87,8 @@ export default function Profile() {
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const achievementsRef = useRef<AchievementsBlockHandle | null>(null);
 
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -104,6 +107,14 @@ export default function Profile() {
 
       const data = unwrap(resp);
       setProfile(data || null);
+
+      // Onboarding: показать визард, если профиль "пустой" (нет имени)
+      // и юзер ещё не дисмиссил его в этой сессии устройства.
+      const dismissed = localStorage.getItem("onboarding_dismissed") === "1";
+      const isEmpty = !data?.first_name && !data?.last_name;
+      if (isEmpty && !dismissed) {
+        setShowOnboarding(true);
+      }
     } catch (err) {
       console.error("Ошибка загрузки профиля:", err);
       setError("Не удалось загрузить профиль. Попробуйте позже.");
@@ -362,6 +373,22 @@ export default function Profile() {
           </>
         )}
       </section>
+
+      {showOnboarding ? (
+        <Onboarding
+          initialFirstName={p.first_name}
+          initialLastName={p.last_name}
+          onClose={() => {
+            localStorage.setItem("onboarding_dismissed", "1");
+            setShowOnboarding(false);
+          }}
+          onCompleted={() => {
+            localStorage.setItem("onboarding_dismissed", "1");
+            setShowOnboarding(false);
+            loadProfile();
+          }}
+        />
+      ) : null}
 
       <Footer />
     </div>
