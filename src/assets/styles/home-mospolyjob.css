@@ -1,106 +1,202 @@
 .mj-hero-wrap {
-  background: #000;
-  color: #fff;
+  background: var(--bg);
+  color: var(--fg);
   flex: 1;
   width: 100%;
-  margin-top: 0;
-  padding: clamp(40px, 6vw, 80px) clamp(5vw, 8vw, 100px);
+  padding: clamp(40px, 6vw, 96px) clamp(16px, 4vw, 64px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+}
+
+.mj-hero-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  margin-bottom: var(--space-5);
 }
 
 .mj-title {
-  font-family: "Gilroy", sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(42px, 6vw, 110px);
-  line-height: 1.1;
-  background: linear-gradient(180deg, #ffffff 0%, #000000 100%);
+  font-size: clamp(48px, 7vw, 120px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  background: linear-gradient(180deg, #ffffff 0%, #71717a 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-top: clamp(10px, 2vw, 40px);
-  margin-bottom: clamp(20px, 5vw, 70px);
+  margin: 0 0 var(--space-10) 0;
   text-align: center;
-  padding-bottom: clamp(5px, 0.8vw, 10px);
+}
+
+.mj-content-group {
+  width: 100%;
+  max-width: var(--size-container);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
 }
 
 .mj-hero-text {
-  text-align: justify;
-  text-align-last: left;
-  font-size: clamp(14px, 1.5vw, 20px);
+  font-size: clamp(15px, 1.4vw, 18px);
   line-height: 1.7;
-  margin-bottom: clamp(30px, 4vw, 60px);
-  max-width: 1300px;
-  padding: 0 clamp(1vw, 2vw, 20px);
+  color: var(--fg-muted);
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
 }
+.mj-hero-text p { margin: 0 0 var(--space-4) 0; }
+.mj-hero-text strong { color: var(--fg); font-weight: 600; }
 .mj-hero-text a {
-  color: #fff;
+  color: var(--accent);
   text-decoration: underline;
+  text-underline-offset: 4px;
   font-weight: 500;
-  transition: opacity 0.2s ease;
 }
-.mj-hero-text a:hover {
-  opacity: 0.8;
-}
+.mj-hero-text a:hover { color: var(--accent-hover); opacity: 1; }
 
 .mj-cards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: clamp(18px, 3vw, 40px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2vw, 24px);
   width: 100%;
-  max-width: 1300px;
 }
 
 .mj-card {
   position: relative;
-  border-radius: 10px;
-  flex: 1 1 clamp(260px, 28vw, 340px);
-  height: clamp(160px, 22vw, 230px);
-  color: #fff;
+  border-radius: var(--radius-lg);
+  min-height: 200px;
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: clamp(16px, 2vw, 24px);
+  padding: clamp(20px, 2.4vw, 28px);
   overflow: hidden;
-  transition: transform 0.3s ease;
+  transition: transform var(--duration-base) var(--ease), box-shadow var(--duration-base) var(--ease);
+  box-shadow: var(--shadow-md);
 }
 .mj-card:hover {
-  transform: scale(1.03);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
-.mj-card--red { background: #e34e5d; }
-.mj-card--green { background: #4bb832; }
-.mj-card--purple { background: #7e49a0; }
+.mj-card--red    { background: linear-gradient(135deg, #ef4d5d 0%, #c93140 100%); }
+.mj-card--green  { background: linear-gradient(135deg, #4bb832 0%, #2d8c1e 100%); }
+.mj-card--purple { background: linear-gradient(135deg, #8e54b3 0%, #5d2f80 100%); }
+
+.mj-card-meta {
+  position: relative;
+  z-index: 2;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: var(--space-2);
+}
 
 .mj-card h3 {
-  font-size: clamp(18px, 2.5vw, 26px);
+  position: relative;
+  z-index: 2;
+  font-size: clamp(22px, 2.4vw, 28px);
   font-weight: 700;
-  margin-bottom: 4px;
-}
-.mj-card-link {
-  font-size: clamp(12px, 1.3vw, 16px);
-  text-decoration: none;
-  color: #fff;
-  border-bottom: 1px solid rgba(255,255,255,.6);
-}
-
-.mj-card-decor img {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.5;
-  top: 0;
-  left: 0;
-}
-.mj-card-decor,
-.mj-card-decor img {
-  pointer-events: none;
+  margin: 0 0 var(--space-3) 0;
+  letter-spacing: -0.01em;
 }
 
 .mj-card-link {
   position: relative;
   z-index: 2;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  color: #ffffff;
+  align-self: flex-start;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  transition: border-color var(--duration-fast) var(--ease);
+}
+.mj-card-link:hover { border-bottom-color: #ffffff; opacity: 1; }
+
+.mj-card-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mj-card-decor img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.18;
+  top: 0;
+  left: 0;
+}
+
+/* Блок «фишек» — три объясняющих карточки в тёмной палитре */
+.mj-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2vw, 24px);
+  width: 100%;
+}
+
+.mj-feature {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: clamp(20px, 2.4vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: border-color var(--duration-base) var(--ease), transform var(--duration-base) var(--ease);
+}
+.mj-feature:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+.mj-feature-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-subtle);
+  letter-spacing: 0.04em;
+}
+
+.mj-feature h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.mj-feature p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg-muted);
+  margin: 0;
+  flex: 1;
+}
+
+.mj-feature-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  align-self: flex-start;
+  margin-top: var(--space-2);
+}
+.mj-feature-link:hover { color: var(--accent-hover); opacity: 1; }
+
+@media (max-width: 900px) {
+  .mj-cards, .mj-features { grid-template-columns: 1fr; }
 }

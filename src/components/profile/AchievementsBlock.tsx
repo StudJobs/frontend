@@ -16,17 +16,17 @@ import {
   verificationStatusLabel,
 } from "../../api/achievements";
 
-const verificationBadgeColors = (s?: number): React.CSSProperties => {
+const verificationBadgeClass = (s?: number): string => {
   switch (s) {
     case VERIFICATION_STATUS.APPROVED:
-      return { background: "#e6f7ec", color: "#136f3b" };
+      return "v-badge v-badge--approved";
     case VERIFICATION_STATUS.PENDING:
-      return { background: "#fff8e1", color: "#7a5a00" };
+      return "v-badge v-badge--pending";
     case VERIFICATION_STATUS.REJECTED:
-      return { background: "#fdecec", color: "#a02223" };
+      return "v-badge v-badge--rejected";
     case VERIFICATION_STATUS.DRAFT:
     default:
-      return { background: "#eee", color: "#444" };
+      return "v-badge v-badge--draft";
   }
 };
 
@@ -140,8 +140,8 @@ const AchievementsBlock = forwardRef<
         onChange={handleFileChange}
       />
 
-      <div className="achievement-type-row" style={{ marginBottom: 8 }}>
-        <label style={{ marginRight: 8 }}>Тип нового достижения:</label>
+      <div className="achievement-type-row">
+        <label>Тип нового достижения:</label>
         <select
           value={selectedType}
           onChange={(e) => setSelectedType(Number(e.target.value))}
@@ -154,11 +154,13 @@ const AchievementsBlock = forwardRef<
         </select>
       </div>
 
-      {loading && <p>Загружаем достижения...</p>}
+      {loading && <p style={{ color: "var(--fg-muted)", fontSize: 13 }}>Загружаем достижения...</p>}
       {error && <p className="profile-error">{error}</p>}
 
       {!loading && items.length === 0 && (
-        <p></p>
+        <p style={{ color: "var(--fg-subtle)", fontSize: 13, fontStyle: "italic" }}>
+          Здесь будут ваши достижения. Загрузите первое — и нажмите «На проверку», чтобы подтвердить навыки у эксперта.
+        </p>
       )}
 
       {items.length > 0 && (
@@ -183,32 +185,15 @@ const AchievementsBlock = forwardRef<
                 </a>
 
                 {typeof a.type === "number" && a.type > 0 && (
-                  <span
-                    className="achievement-type-badge"
-                    style={{
-                      marginLeft: 8,
-                      fontSize: 12,
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      background: "#eef",
-                      color: "#225",
-                    }}
-                  >
+                  <span className="type-badge">
                     {achievementTypeLabel(a.type)}
                   </span>
                 )}
 
                 {typeof status === "number" && status > 0 && (
                   <span
+                    className={verificationBadgeClass(status)}
                     title={a.review_comment || ""}
-                    style={{
-                      marginLeft: 8,
-                      fontSize: 12,
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                      fontWeight: 700,
-                      ...verificationBadgeColors(status),
-                    }}
                   >
                     {verificationStatusLabel(status)}
                   </span>
@@ -220,9 +205,10 @@ const AchievementsBlock = forwardRef<
                     className="mj-vac-btn mj-vac-btn--ghost"
                     style={{
                       marginLeft: 8,
-                      minHeight: 28,
-                      padding: "4px 10px",
+                      height: 28,
+                      padding: "0 10px",
                       fontSize: 12,
+                      width: "auto",
                     }}
                     onClick={() => handleSubmitForReview(a.numeric_id)}
                   >
@@ -231,14 +217,7 @@ const AchievementsBlock = forwardRef<
                 ) : null}
 
                 {status === VERIFICATION_STATUS.REJECTED && a.review_comment ? (
-                  <div
-                    style={{
-                      marginTop: 6,
-                      fontSize: 12,
-                      color: "#a02223",
-                      width: "100%",
-                    }}
-                  >
+                  <div className="review-comment">
                     Комментарий эксперта: {a.review_comment}
                   </div>
                 ) : null}

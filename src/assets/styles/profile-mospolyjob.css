@@ -1,30 +1,33 @@
 .profile-section {
-  background: #fff;
-  color: #000;
+  background: var(--bg);
+  color: var(--fg);
   flex: 1;
   width: 100%;
-  padding: clamp(40px, 6vw, 80px) clamp(5vw, 8vw, 100px);
+  max-width: var(--size-container);
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 64px) clamp(16px, 4vw, 48px);
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-
-  gap: 18px;
+  gap: var(--space-6);
 }
 
 .profile-card {
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(24px, 4vw, 60px);
+  gap: clamp(20px, 3vw, 40px);
   align-items: flex-start;
-
-  margin-bottom: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: clamp(20px, 2.4vw, 32px);
 }
 
 .profile-photo img {
-  width: clamp(180px, 25vw, 280px);
+  width: clamp(160px, 22vw, 240px);
   height: auto;
   object-fit: cover;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
 }
 
 .profile-info {
@@ -33,38 +36,60 @@
 }
 
 .profile-name {
-  font-size: clamp(18px, 2vw, 22px);
+  font-size: clamp(20px, 2vw, 26px);
   font-weight: 700;
-  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-2);
+  color: var(--fg);
 }
 
 .profile-contacts {
-  margin-top: clamp(14px, 2vw, 22px);
-  font-size: clamp(14px, 1.2vw, 18px);
+  margin-top: var(--space-5);
+  font-size: 14px;
   line-height: 1.6;
+  color: var(--fg-muted);
 }
 
 .profile-contacts strong {
   display: block;
-  margin-bottom: 6px;
-  font-weight: 700;
+  margin-bottom: var(--space-1);
+  font-weight: 600;
+  color: var(--fg);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .profile-contacts-list {
-  list-style-type: disc;
-  padding-left: 22px;
+  list-style: none;
+  padding: 0;
   margin: 0;
 }
 
 .profile-contacts-list li {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   word-break: break-word;
+  position: relative;
+  padding-left: var(--space-4);
+}
+.profile-contacts-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--fg-subtle);
 }
 
 .profile-files h3 {
-  font-size: clamp(15px, 1.4vw, 19px);
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg);
+  margin-bottom: var(--space-2);
 }
 
 .profile-files ul {
@@ -76,111 +101,131 @@
 .profile-files li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .file-link {
-  color: #000;
-  text-decoration: underline;
-  font-weight: 600;
-  font-size: clamp(13px, 1.2vw, 17px);
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: color var(--duration-fast) var(--ease);
 }
+.file-link:hover { color: var(--accent-hover); opacity: 1; }
 
 .file-icon {
-  width: clamp(14px, 1.5vw, 18px);
+  width: 16px;
   height: auto;
   cursor: pointer;
-  opacity: 0.8;
-  transition: opacity 0.2s ease;
+  opacity: 0.6;
+  filter: brightness(0) invert(1);
+  transition: opacity var(--duration-fast) var(--ease);
 }
-
-.file-icon:hover {
-  opacity: 1;
-}
+.file-icon:hover { opacity: 1; }
 
 .profile-buttons {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: clamp(16px, 3vw, 40px);
-  margin-top: clamp(40px, 5vw, 60px);
+  gap: var(--space-3);
+  margin-top: var(--space-8);
 }
 
 .profile-btn {
-  background: #000;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-fg);
   border: none;
-  padding: clamp(10px, 1vw, 14px) clamp(18px, 2vw, 28px);
-  border-radius: 9999px;
-  font-size: clamp(13px, 1.2vw, 16px);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
 }
+.profile-btn:hover { background: var(--accent-hover); }
+.profile-btn:active { transform: translateY(1px); }
 
-.profile-btn:hover {
-  background: #333;
+.profile-btn[disabled],
+.profile-btn:disabled {
+  background: var(--surface-elev);
+  color: var(--fg-subtle);
+  cursor: not-allowed;
 }
 
 .logout-btn {
-  background: #e63246;
+  background: var(--surface-elev);
+  color: var(--danger);
+  border: 1px solid var(--border);
 }
-
-.logout-btn:hover {
-  background: #c02838;
-}
+.logout-btn:hover { background: var(--danger-soft); border-color: var(--danger); }
 
 .profile-description {
-  margin-top: clamp(16px, 2vw, 24px);
-  font-size: clamp(14px, 1.2vw, 18px);
-  line-height: 1.6;
-  max-width: 1400px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
+  margin-top: var(--space-6);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 800px;
+  color: var(--fg-muted);
 }
 
 .profile-description strong {
   display: block;
-  margin-bottom: 6px;
-  font-weight: 700;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+  color: var(--fg);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .profile-description p {
   margin: 0;
-  color: #222;
+  color: var(--fg-muted);
   font-weight: 400;
-  text-align: justify;
-  text-align-last: left;
   hyphens: auto;
 }
 
 .profile-details-list {
-  list-style-type: disc;
-  padding-left: 22px;
-  margin: 0 0 clamp(14px, 2vw, 20px) 0;
-  font-size: clamp(14px, 1.2vw, 18px);
-  line-height: 1.6;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-5) 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--fg-muted);
 }
 
 .profile-details-list li {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
+  position: relative;
+  padding-left: var(--space-4);
+}
+.profile-details-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--fg-subtle);
 }
 
-.achievements-block {
-  margin-top: 16px;
-}
+.achievements-block { margin-top: var(--space-4); }
 
-.upload-achievement {
-  margin-bottom: 12px;
-}
+.upload-achievement { margin-bottom: var(--space-3); }
 
 .achievement-rename-input {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 4px 8px;
+  background: var(--surface-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  color: var(--fg);
   font-size: 14px;
-  margin-left: 8px;
+  margin-left: var(--space-2);
+}
+.achievement-rename-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-glow);
 }
 
 .profile-bottom-block {
@@ -190,61 +235,47 @@
 }
 
 .profile-about-title {
-  font-weight: 800 !important;
-  font-size: clamp(16px, 1.4vw, 20px);
-  margin: 0 0 8px 0;
+  font-weight: 700 !important;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg);
+  margin: 0 0 var(--space-2) 0;
 }
 
 .profile-about p {
   margin: 0;
   line-height: 1.7;
+  color: var(--fg-muted);
 }
 
 .profile-achievements {
-  margin-top: clamp(28px, 3vw, 40px);
-  max-width: 800px;
+  margin-top: var(--space-8);
+  max-width: 100%;
 }
 .profile-achievements h2 {
-  font-weight: 800;
-  font-size: clamp(16px, 1.4vw, 20px);
-  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-3);
+  color: var(--fg);
 }
 
 .profile-resume-block > p {
-  font-weight: 700;
-  margin-bottom: 6px;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  color: var(--fg);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.profile-resume-block {
-  margin-bottom: 16px;
-}
+.profile-resume-block { margin-bottom: var(--space-4); }
 
-.resume-row {
-  margin-top: 4px;
-}
+.resume-row { margin-top: var(--space-1); }
 
 @media (max-width: 768px) {
-  .profile-card {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .profile-info {
-    text-align: center;
-  }
-
-  .profile-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .profile-details-list {
-    text-align: left;
-    padding-left: 30px;
-  }
-
-  .profile-contacts-list {
-    padding-left: 30px;
-  }
+  .profile-card { flex-direction: column; }
+  .profile-info { width: 100%; }
+  .profile-buttons { flex-direction: column; align-items: stretch; }
 }

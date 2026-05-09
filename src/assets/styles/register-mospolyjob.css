@@ -4,209 +4,221 @@
   align-items: center;
   justify-content: center;
   min-height: 70vh;
-  background: #fff;
-  color: #000;
+  background: var(--bg);
+  color: var(--fg);
   text-align: center;
-  padding: clamp(40px, 8vw, 80px);
+  padding: clamp(40px, 8vw, 80px) clamp(16px, 4vw, 48px);
 }
 
 .mj-register-title {
-  font-size: clamp(28px, 3vw, 42px);
-  font-weight: 600;
-  margin-bottom: clamp(20px, 4vw, 36px);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: clamp(20px, 4vw, 32px);
+  color: var(--fg);
 }
-
-/* ===== ФОРМА ===== */
 
 .register-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
   max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 4vw, 36px);
+  gap: var(--space-3);
 }
 
 .register-input {
   width: 100%;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 9999px;
-  padding: clamp(12px, 1.5vw, 16px);
-  margin-bottom: 6px;
-  text-align: center;
-  font-size: clamp(14px, 1.2vw, 18px);
+  background: var(--surface-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: 14px;
+  transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+  outline: none;
 }
 
 .register-input::placeholder {
-  color: #fff;
-  opacity: 0.85;
+  color: var(--fg-subtle);
 }
 
-/* ===== ТЕКСТ ОШИБОК ПОД ПОЛЯМИ ===== */
+.register-input:hover { border-color: var(--border-strong); }
+.register-input:focus { border-color: var(--accent); box-shadow: var(--shadow-glow); }
 
 .register-field-error {
   width: 100%;
-  max-width: 420px;
-  margin-top: 2px;
-  margin-bottom: 10px;
-  color: #E63246;
+  margin-top: -4px;
+  margin-bottom: var(--space-2);
+  color: var(--danger);
   font-size: 13px;
   font-weight: 500;
-  text-align: center;
-  line-height: 1.2;
+  text-align: left;
+  line-height: 1.3;
 }
 
-/* ===== БЛОК РОЛЕЙ ===== */
-
+/* ===== Roles ===== */
 .register-roles {
   display: flex;
-  justify-content: center;
-  gap: 28px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: var(--space-3);
   width: 100%;
-  margin: 16px 0 18px;
+  margin: var(--space-2) 0;
 }
 
 .register-role {
-  flex: 0 0 auto;
+  flex: 1 1 calc(50% - 8px);
+  min-width: 140px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 2px;
-  border: none;
-  background: transparent;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-elev);
   cursor: pointer;
   user-select: none;
+  transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+  text-align: left;
 }
 
-.register-role:hover .register-role-title {
-  text-decoration: underline;
+.register-role:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.register-role:has(.register-role-input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .register-role-input {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   margin: 0;
-  accent-color: #000;
+  accent-color: var(--accent);
+  flex-shrink: 0;
 }
 
 .register-role-text {
   text-align: left;
-  line-height: 1.15;
+  line-height: 1.2;
+  display: flex;
+  flex-direction: column;
 }
 
 .register-role-title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
+  color: var(--fg);
 }
 
 .register-role-subtitle {
-  margin-left: 4px;
-  display: inline-block;
-  font-size: 12px;
-  opacity: 0.7;
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-top: 2px;
 }
 
-.register-role:has(.register-role-input:checked) .register-role-title {
-  font-weight: 700;
-}
-
-/* ===== ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ ===== */
-
+/* ===== Privacy ===== */
 .register-privacy {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: clamp(13px, 1.2vw, 17px);
-  margin-top: 6px;
-  margin-bottom: clamp(16px, 2.5vw, 24px);
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--fg-muted);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-3);
   cursor: pointer;
   flex-wrap: wrap;
-  text-align: center;
+  text-align: left;
 }
 
 .register-privacy input[type="checkbox"] {
-  accent-color: #000;
-  width: 18px;
-  height: 18px;
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
 .register-privacy a {
-  text-decoration: underline;
-  color: #000;
-  transition: opacity 0.2s;
+  text-decoration: none;
+  color: var(--accent);
+  transition: color var(--duration-fast) var(--ease);
 }
+.register-privacy a:hover { color: var(--accent-hover); opacity: 1; }
 
-.register-privacy a:hover {
-  opacity: 0.8;
-}
-
-/* ===== КНОПКА РЕГИСТРАЦИИ ===== */
-
+/* ===== Submit ===== */
 .register-button {
-  width: clamp(200px, 25vw, 300px);
-  background: #000;
-  color: #fff;
+  width: 100%;
+  background: var(--accent);
+  color: var(--accent-fg);
   border: none;
-  border-radius: 9999px;
-  padding: clamp(10px, 1.3vw, 14px);
-  font-size: clamp(14px, 1.2vw, 18px);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
 }
 
-.register-button:hover {
-  background: #222;
-}
-
-/* ===== ССЫЛКА НА ВХОД ===== */
+.register-button:hover { background: var(--accent-hover); }
+.register-button:active { transform: translateY(1px); }
+.register-button:disabled { background: var(--surface-elev); color: var(--fg-subtle); cursor: not-allowed; }
 
 .register-login-link {
-  margin-top: clamp(14px, 2vw, 20px);
-  font-size: clamp(14px, 1.2vw, 18px);
+  margin-top: var(--space-3);
+  font-size: 13px;
   text-align: center;
+  color: var(--fg-muted);
 }
 
 .register-login-link a {
-  text-decoration: underline;
-  font-weight: 600;
-  color: #000;
-  transition: color 0.3s;
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--accent);
+  margin-left: var(--space-1);
 }
-
-.register-login-link a:hover {
-  color: #333;
-}
-
-/* ===== БЛОК ОШИБКИ ОТ СЕРВЕРА ===== */
+.register-login-link a:hover { color: var(--accent-hover); opacity: 1; }
 
 .register-error-placeholder {
-  min-height: clamp(28px, 3vw, 36px);
+  min-height: 28px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  margin-top: clamp(8px, 1vw, 16px);
+  margin-top: var(--space-2);
 }
 
 .register-error-text {
-  color: #e63246;
-  font-size: clamp(13px, 1.1vw, 16px);
+  color: var(--danger);
+  font-size: 14px;
   font-weight: 500;
   text-align: center;
   animation: fadeIn 0.25s ease-in-out;
+  background: var(--danger-soft);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  width: 100%;
 }
 
 .register-success-text {
-  color: #55b432;
-  font-size: clamp(13px, 1.1vw, 16px);
+  color: var(--success);
+  font-size: 14px;
   font-weight: 500;
   text-align: center;
   animation: fadeIn 0.25s ease-in-out;
+  background: var(--success-soft);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  width: 100%;
 }
-
-/* ===== АНИМАЦИЯ ===== */
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(3px); }

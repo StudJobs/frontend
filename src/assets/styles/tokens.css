@@ -1,0 +1,91 @@
+/* Design tokens — единый источник для тёмной темы StudJobs.
+   Логика: layered surfaces (bg → surface → surface-elev), accent один (electric-blue),
+   статусные цвета держим отдельно от brand-палитры карточек на главной. */
+
+:root {
+  /* Surfaces (от глубокого к поверхности) */
+  --bg:             #0a0a0b;
+  --surface:        #131316;
+  --surface-elev:   #1c1c20;
+  --surface-hover:  #232328;
+  --surface-soft:   #18181b;
+
+  /* Borders */
+  --border:         #26262b;
+  --border-strong:  #36363c;
+  --border-accent:  #3b82f6;
+
+  /* Text */
+  --fg:             #f4f4f5;
+  --fg-muted:       #a1a1aa;
+  --fg-subtle:      #71717a;
+  --fg-inverse:     #0a0a0b;
+
+  /* Accents */
+  --accent:         #3b82f6;
+  --accent-hover:   #60a5fa;
+  --accent-soft:    rgba(59, 130, 246, 0.12);
+  --accent-fg:      #ffffff;
+
+  /* Status (используем для бейджей/тостов/индикаторов) */
+  --success:        #22c55e;
+  --success-soft:   rgba(34, 197, 94, 0.12);
+  --warning:        #f59e0b;
+  --warning-soft:   rgba(245, 158, 11, 0.12);
+  --danger:         #ef4444;
+  --danger-soft:    rgba(239, 68, 68, 0.12);
+  --info:           #06b6d4;
+  --info-soft:      rgba(6, 182, 212, 0.12);
+
+  /* Verification levels (skill-граф / уровневые бейджи) */
+  --level-bronze:   #b88150;
+  --level-silver:   #b0b0bb;
+  --level-gold:     #f5b948;
+  --level-expert:   #22c55e;
+
+  /* Brand-палитра карточек (исторический mospolyjob) */
+  --brand-red:      #e34e5d;
+  --brand-green:    #4bb832;
+  --brand-purple:   #7e49a0;
+
+  /* Радиусы */
+  --radius-xs:      4px;
+  --radius-sm:      6px;
+  --radius-md:      10px;
+  --radius-lg:      16px;
+  --radius-xl:      24px;
+  --radius-pill:    9999px;
+
+  /* Тени */
+  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:      0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:      0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow:    0 0 0 4px var(--accent-soft);
+
+  /* Шкала отступов (4pt base) */
+  --space-1:        4px;
+  --space-2:        8px;
+  --space-3:        12px;
+  --space-4:        16px;
+  --space-5:        20px;
+  --space-6:        24px;
+  --space-8:        32px;
+  --space-10:       40px;
+  --space-12:       48px;
+  --space-16:       64px;
+
+  /* Типографика */
+  --font-sans:      "Inter", "Manrope", "Gilroy", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display:   "Gilroy", "Inter", "Manrope", system-ui, sans-serif;
+  --font-mono:      "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Размеры */
+  --size-header:    72px;
+  --size-container: 1280px;
+
+  /* Анимации */
+  --ease:           cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast:  120ms;
+  --duration-base:  200ms;
+  --duration-slow:  320ms;
+}

@@ -4,36 +4,44 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: clamp(40px, 8vw, 100px) clamp(5vw, 10vw, 120px);
-  background: #fff;
-  color: #000;
+  padding: clamp(40px, 8vw, 96px) clamp(16px, 6vw, 64px);
+  background: var(--bg);
+  color: var(--fg);
   min-height: 70vh;
 }
 
 .notfound-title {
-  font-size: clamp(26px, 3vw, 42px);
-  font-weight: 500;
-  margin-bottom: clamp(24px, 5vw, 48px);
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: clamp(24px, 5vw, 40px);
+  color: var(--fg);
 }
 
 .notfound-image {
-  width: clamp(240px, 40vw, 520px);
+  width: clamp(220px, 36vw, 480px);
   height: auto;
-  margin-bottom: clamp(24px, 5vw, 48px);
+  margin-bottom: clamp(24px, 5vw, 40px);
+  opacity: 0.85;
 }
 
 .notfound-text {
-  font-size: clamp(16px, 1.5vw, 22px);
-  margin-bottom: clamp(10px, 2vw, 24px);
+  font-size: clamp(15px, 1.4vw, 18px);
+  margin-bottom: var(--space-4);
+  color: var(--fg-muted);
+  max-width: 640px;
+  line-height: 1.6;
 }
 
 .notfound-link a {
-  text-decoration: underline;
-  font-weight: 600;
-  color: #000;
-  font-size: clamp(16px, 1.5vw, 22px);
-  transition: color 0.3s;
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--accent);
+  font-size: clamp(15px, 1.4vw, 18px);
+  background: var(--accent-soft);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease);
+  display: inline-block;
 }
-.notfound-link a:hover {
-  color: #555;
-}
+.notfound-link a:hover { background: rgba(59, 130, 246, 0.2); opacity: 1; }

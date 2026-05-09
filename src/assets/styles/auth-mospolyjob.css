@@ -4,118 +4,129 @@
   align-items: center;
   justify-content: center;
   min-height: 70vh;
-  background: #fff;
-  color: #000;
+  background: var(--bg);
+  color: var(--fg);
   text-align: center;
-  padding: clamp(40px, 8vw, 80px);
+  padding: clamp(40px, 8vw, 80px) clamp(16px, 4vw, 48px);
 }
 
 .mj-auth-title {
-  font-size: clamp(28px, 3vw, 42px);
-  font-weight: 600;
-  margin-bottom: clamp(24px, 5vw, 48px);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: clamp(24px, 5vw, 40px);
+  color: var(--fg);
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
-  max-width: 420px;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 4vw, 36px);
+  gap: var(--space-3);
 }
 
 .auth-input {
   width: 100%;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 9999px;
-  padding: clamp(12px, 1.5vw, 16px);
-  margin-bottom: 8px;
-  text-align: center;
-  font-size: clamp(14px, 1.2vw, 18px);
+  background: var(--surface-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: 14px;
+  transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+  outline: none;
 }
 
 .auth-input::placeholder {
-  color: #fff;
-  opacity: 0.85;
+  color: var(--fg-subtle);
 }
+
+.auth-input:hover { border-color: var(--border-strong); }
+.auth-input:focus { border-color: var(--accent); box-shadow: var(--shadow-glow); }
 
 .auth-field-error {
   width: 100%;
-  max-width: 420px;
-  margin-top: 4px;
-  margin-bottom: 14px;
-  color: #E63246;
+  margin-top: -4px;
+  margin-bottom: var(--space-2);
+  color: var(--danger);
   font-size: 13px;
   font-weight: 500;
-  text-align: center;
-  line-height: 1.2;
+  text-align: left;
+  line-height: 1.3;
 }
 
 .auth-button {
-  width: clamp(160px, 25vw, 240px);
-  background: #000;
-  color: #fff;
+  width: 100%;
+  background: var(--accent);
+  color: var(--accent-fg);
   border: none;
-  border-radius: 9999px;
-  padding: clamp(10px, 1.3vw, 14px);
-  font-size: clamp(14px, 1.2vw, 18px);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.3s;
-  margin-top: clamp(8px, 1vw, 16px);
+  transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+  margin-top: var(--space-2);
 }
-.auth-button:hover {
-  background: #222;
-}
+.auth-button:hover { background: var(--accent-hover); }
+.auth-button:active { transform: translateY(1px); }
+.auth-button:disabled { background: var(--surface-elev); color: var(--fg-subtle); cursor: not-allowed; }
 
 .auth-register {
-  margin-top: 0;
-  font-size: clamp(15px, 1.3vw, 18px);
+  margin-top: var(--space-3);
+  font-size: 14px;
+  color: var(--fg-muted);
+  text-align: center;
 }
 
 .auth-register a {
-  text-decoration: underline;
-  font-weight: 600;
-  color: #000;
-  transition: color 0.3s;
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--accent);
+  margin-left: var(--space-1);
 }
-
-.auth-register a:hover {
-  color: #333;
-}
+.auth-register a:hover { color: var(--accent-hover); opacity: 1; }
 
 .auth-error-placeholder {
-  min-height: clamp(30px, 3vw, 40px);
+  min-height: 28px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  margin-top: clamp(10px, 1vw, 20px);
+  margin-top: var(--space-3);
 }
 
 .auth-error-text {
-  color: #e63246;
-  font-size: clamp(13px, 1.1vw, 16px);
+  color: var(--danger);
+  font-size: 14px;
   font-weight: 500;
   text-align: center;
   animation: fadeIn 0.25s ease-in-out;
+  background: var(--danger-soft);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  width: 100%;
 }
 
 .auth-forgot {
-  margin-top: 18px;
-  margin-bottom: 22px;
-  font-size: clamp(14px, 1.2vw, 17px);
+  margin-top: var(--space-3);
+  font-size: 13px;
+  text-align: right;
 }
 
 .auth-forgot a {
-  color: #000;
-  text-decoration: underline;
-  transition: color 0.25s ease;
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease);
 }
-
-.auth-forgot a:hover {
-  color: #333;
-}
+.auth-forgot a:hover { color: var(--fg); opacity: 1; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(3px); }

@@ -8,77 +8,6 @@ type Props = {
   maxItems?: number;
 };
 
-const styles = {
-  wrap: {
-    border: "1px solid #d6d6d6",
-    borderRadius: 12,
-    padding: 8,
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: 6,
-    background: "#fff",
-    minHeight: 44,
-    position: "relative" as const,
-  },
-  chip: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "4px 10px",
-    background: "#eef2ff",
-    border: "1px solid #c7d2fe",
-    color: "#1e3a8a",
-    borderRadius: 999,
-    fontSize: 13,
-    fontWeight: 600,
-  },
-  chipBtn: {
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    color: "inherit",
-    fontSize: 14,
-    padding: 0,
-    lineHeight: 1,
-  },
-  input: {
-    flex: 1,
-    minWidth: 120,
-    border: "none",
-    outline: "none",
-    background: "transparent",
-    fontSize: 14,
-    padding: "4px 6px",
-  },
-  dropdown: {
-    position: "absolute" as const,
-    top: "100%",
-    left: 0,
-    right: 0,
-    background: "#fff",
-    border: "1px solid #d6d6d6",
-    borderRadius: 12,
-    marginTop: 4,
-    maxHeight: 240,
-    overflowY: "auto" as const,
-    boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-    zIndex: 30,
-  },
-  option: {
-    padding: "8px 12px",
-    cursor: "pointer",
-    fontSize: 14,
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  optionSlug: {
-    opacity: 0.55,
-    fontSize: 12,
-    fontWeight: 600,
-  },
-};
-
 export default function SkillsInput({
   value,
   onChange,
@@ -92,7 +21,6 @@ export default function SkillsInput({
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Резолв slug → Skill для отображения имён в чипах
   useEffect(() => {
     const missing = value.filter((s) => !resolved[s]);
     if (missing.length === 0) return;
@@ -114,7 +42,6 @@ export default function SkillsInput({
     };
   }, [value, resolved]);
 
-  // Дебаунс-поиск (или popular при пустом вводе)
   useEffect(() => {
     let cancelled = false;
     const trimmed = query.trim();
@@ -134,7 +61,6 @@ export default function SkillsInput({
     };
   }, [query, open]);
 
-  // Закрытие по клику снаружи
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
@@ -177,13 +103,17 @@ export default function SkillsInput({
   const chipLabel = (slug: string) => resolved[slug]?.name || slug;
 
   return (
-    <div ref={wrapRef} style={styles.wrap} onClick={() => inputRef.current?.focus()}>
+    <div
+      ref={wrapRef}
+      className="skills-input-wrap"
+      onClick={() => inputRef.current?.focus()}
+    >
       {value.map((slug) => (
-        <span key={slug} style={styles.chip}>
+        <span key={slug} className="skills-input-chip">
           {chipLabel(slug)}
           <button
             type="button"
-            style={styles.chipBtn}
+            className="skills-input-chip-btn"
             aria-label={`Удалить ${chipLabel(slug)}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -197,7 +127,7 @@ export default function SkillsInput({
       <input
         ref={inputRef}
         type="text"
-        style={styles.input}
+        className="skills-input-field"
         value={query}
         placeholder={value.length ? "" : placeholder}
         onChange={(e) => setQuery(e.target.value)}
@@ -205,18 +135,18 @@ export default function SkillsInput({
         onKeyDown={handleKeyDown}
       />
       {open && visibleSuggestions.length > 0 ? (
-        <div style={styles.dropdown}>
+        <div className="skills-input-dropdown">
           {visibleSuggestions.map((s) => (
             <div
               key={s.slug}
-              style={styles.option}
+              className="skills-input-option"
               onMouseDown={(e) => {
                 e.preventDefault();
                 addSlug(s.slug, s);
               }}
             >
               <span>{s.name}</span>
-              <span style={styles.optionSlug}>{s.slug}</span>
+              <span className="skills-input-option-slug">{s.slug}</span>
             </div>
           ))}
         </div>
