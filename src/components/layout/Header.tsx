@@ -18,9 +18,9 @@ const Header: React.FC = () => {
     }
 
     if (role === "ROLE_EMPLOYER" || role === "hr") {
-      navigate("/hr-profile");
+      navigate("/hr");
     } else if (role === "ROLE_COMPANY_OWNER" || role === "ROLE_COMPANY") {
-      navigate("/company-profile");
+      navigate("/hr");
     } else if (role === "ROLE_EXPERT") {
       navigate("/expert");
     } else {

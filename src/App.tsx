@@ -16,6 +16,7 @@ import Tasks from "./pages/Tasks";
 import HRTasks from "./pages/HRTasks";
 import Expert from "./pages/Expert";
 import PublicProfile from "./pages/PublicProfile";
+import HRDashboard from "./pages/HRDashboard";
 
 export default function App() {
   return (
@@ -39,6 +40,15 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ROLE_STUDENT"]}>
               <ProfileEdit />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/hr"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER", "ROLE_COMPANY_OWNER"]}>
+              <HRDashboard />
             </PrivateRoute>
           }
         />
