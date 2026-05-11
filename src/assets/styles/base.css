@@ -28,36 +28,14 @@
 
 html, body, #root { height: 100%; }
 
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
+/* body & ::selection / ::placeholder / scrollbar — реализованы в tokens.css */
 
-::selection {
-  background: var(--accent-soft);
-  color: var(--fg);
-}
-
-::placeholder {
-  color: var(--fg-subtle);
-}
-
-/* Глобальный фокус — кольцо, видно на тёмном */
+/* Глобальный фокус — янтарное кольцо */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
-
-/* Скроллбар под тёмную тему */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); }
-::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
 a {
   color: inherit;

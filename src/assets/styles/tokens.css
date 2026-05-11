@@ -1,91 +1,301 @@
-/* Design tokens — единый источник для тёмной темы StudJobs.
-   Логика: layered surfaces (bg → surface → surface-elev), accent один (electric-blue),
-   статусные цвета держим отдельно от brand-палитры карточек на главной. */
+/* ============================================================================
+   StudJobs · Дизайн-токены
+   --------------------------------------------------------------------------
+   Эстетика: «academic brutalist × workshop». Тёплая deep-ink тёмная основа,
+   янтарный (amber) как доминирующий акцент, lime как verified-сигнал, белый
+   как «бумага» в светлой теме. Геометрия чертежей: ровные 1px бордеры,
+   аккуратные радиусы, дисциплинированная типографика.
+
+   Шрифты:
+     - Fraunces (display, variable: opsz + wght + SOFT)  ─ заголовки, hero
+     - DM Sans (body, variable opsz)                     ─ интерфейс
+     - JetBrains Mono (mono)                             ─ ID, теги, метки
+
+   Цветовая логика: одна доминанта (amber), один verified-сигнал (lime),
+   статусы (success/warning/danger/info) ИНЫЕ оттенки, чтобы не пересекаться
+   с акцентом. Поверхности слоятся paper → surface → elev → highlight.
+   ============================================================================ */
 
 :root {
-  /* Surfaces (от глубокого к поверхности) */
-  --bg:             #0a0a0b;
-  --surface:        #131316;
-  --surface-elev:   #1c1c20;
-  --surface-hover:  #232328;
-  --surface-soft:   #18181b;
+  /* ── Brand & Identity ───────────────────────────────────────────────── */
+  --brand:            #e9a23b;   /* amber: основной акцент (Highlight, marked, верифицированный жёлтый) */
+  --brand-deep:       #b97a1f;   /* darker amber для активных состояний / press */
+  --brand-soft:       rgba(233, 162, 59, 0.12);
+  --brand-glow:       rgba(233, 162, 59, 0.22);
 
-  /* Borders */
-  --border:         #26262b;
-  --border-strong:  #36363c;
-  --border-accent:  #3b82f6;
+  --verified:         #9fd649;   /* lime: «проверено экспертом», только для verified-сигналов */
+  --verified-soft:    rgba(159, 214, 73, 0.12);
+  --verified-deep:    #6ea22d;
 
-  /* Text */
-  --fg:             #f4f4f5;
-  --fg-muted:       #a1a1aa;
-  --fg-subtle:      #71717a;
-  --fg-inverse:     #0a0a0b;
+  --accent-2:         #d76262;   /* warm red — alt-акцент для «горящих»/важных меток */
+  --accent-2-soft:    rgba(215, 98, 98, 0.12);
 
-  /* Accents */
-  --accent:         #3b82f6;
-  --accent-hover:   #60a5fa;
-  --accent-soft:    rgba(59, 130, 246, 0.12);
-  --accent-fg:      #ffffff;
+  /* ── Surfaces (dark theme — default) ────────────────────────────────── */
+  --paper:            #0f1011;   /* deepest, body background */
+  --surface:          #17181a;   /* основные карточки */
+  --surface-elev:     #1f2123;   /* hover / приподнятая поверхность */
+  --surface-soft:     #131416;   /* секционные подложки */
+  --surface-warm:     #1c1a17;   /* tinted surface — для hero/highlight зон */
+  --surface-glass:    rgba(23, 24, 26, 0.72); /* для blur-headers */
 
-  /* Status (используем для бейджей/тостов/индикаторов) */
-  --success:        #22c55e;
-  --success-soft:   rgba(34, 197, 94, 0.12);
-  --warning:        #f59e0b;
-  --warning-soft:   rgba(245, 158, 11, 0.12);
-  --danger:         #ef4444;
-  --danger-soft:    rgba(239, 68, 68, 0.12);
-  --info:           #06b6d4;
-  --info-soft:      rgba(6, 182, 212, 0.12);
+  /* ── Borders ────────────────────────────────────────────────────────── */
+  --border:           #2a2c30;
+  --border-strong:    #3a3d42;
+  --border-soft:      #20222530;
+  --border-brand:     #c98a30;
+  --border-verified:  #7eb337;
 
-  /* Verification levels (skill-граф / уровневые бейджи) */
-  --level-bronze:   #b88150;
-  --level-silver:   #b0b0bb;
-  --level-gold:     #f5b948;
-  --level-expert:   #22c55e;
+  /* ── Text ───────────────────────────────────────────────────────────── */
+  --ink:              #f5f0e3;   /* тёплый paper-white — основной текст */
+  --ink-muted:        #b8b3a4;
+  --ink-subtle:       #837e72;
+  --ink-faint:        #5b5750;
+  --ink-on-brand:     #1a1207;   /* почти-чёрный для контраста на amber */
 
-  /* Brand-палитра карточек (исторический mospolyjob) */
-  --brand-red:      #e34e5d;
-  --brand-green:    #4bb832;
-  --brand-purple:   #7e49a0;
+  /* ── Status (одного rank с brand, разные оттенки) ───────────────────── */
+  --success:          #5db374;
+  --success-soft:     rgba(93, 179, 116, 0.14);
+  --warning:          #e9a23b;        /* совпадает с brand сознательно — pending = amber */
+  --warning-soft:     rgba(233, 162, 59, 0.14);
+  --danger:           #d76262;
+  --danger-soft:      rgba(215, 98, 98, 0.14);
+  --info:             #5fa8c0;
+  --info-soft:        rgba(95, 168, 192, 0.14);
 
-  /* Радиусы */
-  --radius-xs:      4px;
-  --radius-sm:      6px;
-  --radius-md:      10px;
-  --radius-lg:      16px;
-  --radius-xl:      24px;
-  --radius-pill:    9999px;
+  /* ── Verification levels ────────────────────────────────────────────── */
+  --level-bronze:     #c98a4d;
+  --level-silver:     #c2c0b3;
+  --level-gold:       #e9a23b;
+  --level-expert:     #9fd649;
 
-  /* Тени */
-  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md:      0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg:      0 10px 30px rgba(0, 0, 0, 0.5);
-  --shadow-glow:    0 0 0 4px var(--accent-soft);
+  /* ── Радиусы (минималистичная шкала) ────────────────────────────────── */
+  --radius-xs:        2px;
+  --radius-sm:        4px;
+  --radius-md:        8px;
+  --radius-lg:        14px;
+  --radius-xl:        22px;
+  --radius-pill:      999px;
 
-  /* Шкала отступов (4pt base) */
-  --space-1:        4px;
-  --space-2:        8px;
-  --space-3:        12px;
-  --space-4:        16px;
-  --space-5:        20px;
-  --space-6:        24px;
-  --space-8:        32px;
-  --space-10:       40px;
-  --space-12:       48px;
-  --space-16:       64px;
+  /* ── Тени (мягкие, тёплые) ──────────────────────────────────────────── */
+  --shadow-xs:        0 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm:        0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md:        0 6px 18px -4px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg:        0 18px 40px -8px rgba(0, 0, 0, 0.55), 0 6px 14px rgba(0, 0, 0, 0.3);
+  --shadow-glow:      0 0 0 3px var(--brand-soft);
+  --shadow-verified:  0 0 0 3px var(--verified-soft);
 
-  /* Типографика */
-  --font-sans:      "Inter", "Manrope", "Gilroy", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display:   "Gilroy", "Inter", "Manrope", system-ui, sans-serif;
-  --font-mono:      "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* ── Spacing (8pt base + half-step для тонкой подстройки) ───────────── */
+  --space-0:          0;
+  --space-px:         1px;
+  --space-1:          4px;
+  --space-2:          8px;
+  --space-3:          12px;
+  --space-4:          16px;
+  --space-5:          20px;
+  --space-6:          24px;
+  --space-7:          28px;
+  --space-8:          32px;
+  --space-10:         40px;
+  --space-12:         48px;
+  --space-14:         56px;
+  --space-16:         64px;
+  --space-20:         80px;
+  --space-24:         96px;
+  --space-32:         128px;
 
-  /* Размеры */
-  --size-header:    72px;
-  --size-container: 1280px;
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --font-display:     "Fraunces", "Iowan Old Style", "Georgia", serif;
+  --font-sans:        "DM Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:        "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* Анимации */
-  --ease:           cubic-bezier(0.16, 1, 0.3, 1);
-  --duration-fast:  120ms;
-  --duration-base:  200ms;
-  --duration-slow:  320ms;
+  /* fluid type scale (clamp: minVW = 320, maxVW = 1440) */
+  --text-xs:          clamp(11px, 0.65rem + 0.1vw, 12px);
+  --text-sm:          clamp(13px, 0.78rem + 0.12vw, 14px);
+  --text-base:        clamp(15px, 0.88rem + 0.15vw, 16px);
+  --text-md:          clamp(17px, 1rem + 0.2vw, 18px);
+  --text-lg:          clamp(20px, 1.1rem + 0.5vw, 24px);
+  --text-xl:          clamp(24px, 1.3rem + 0.8vw, 32px);
+  --text-2xl:         clamp(30px, 1.6rem + 1.5vw, 44px);
+  --text-3xl:         clamp(40px, 2rem + 2.5vw, 64px);
+  --text-4xl:         clamp(52px, 2.4rem + 4vw, 88px);
+
+  --leading-tight:    1.1;
+  --leading-snug:     1.25;
+  --leading-normal:   1.5;
+  --leading-relaxed:  1.7;
+
+  --tracking-tighter: -0.04em;
+  --tracking-tight:   -0.02em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.02em;
+  --tracking-wider:   0.08em;
+  --tracking-widest:  0.18em;
+
+  /* ── Размеры layout ─────────────────────────────────────────────────── */
+  --size-header:        72px;
+  --size-sidebar:       240px;
+  --size-sidebar-narrow:64px;
+  --size-container:     1280px;
+  --size-container-narrow: 880px;
+  --size-prose:         680px;
+
+  /* ── Анимации ────────────────────────────────────────────────────────── */
+  --ease:             cubic-bezier(0.32, 0.72, 0, 1);   /* sharp out */
+  --ease-soft:        cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-back:        cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:    120ms;
+  --duration-base:    220ms;
+  --duration-slow:    420ms;
+  --duration-slower:  680ms;
+
+  /* ── Z-stack ─────────────────────────────────────────────────────────── */
+  --z-header:         50;
+  --z-sidebar:        40;
+  --z-dropdown:       60;
+  --z-modal:          100;
+  --z-toast:          120;
+
+  /* ── Legacy aliases (для старых mospolyjob-css до миграции) ─────────── */
+  /* Эти алиасы маппят старые имена токенов на новые, чтобы существующие
+     страницы (vacancies, candidates, profile-hr-edit, register, auth, и т.д.)
+     продолжали работать без переписывания. Удалить, когда все CSS
+     мигрируют на новые имена.                                              */
+  --bg:               var(--paper);
+  --surface-elev:     #1f2123;
+  --surface-hover:    #232528;
+
+  --fg:               var(--ink);
+  --fg-muted:         var(--ink-muted);
+  --fg-subtle:        var(--ink-subtle);
+  --fg-inverse:       var(--ink-on-brand);
+
+  --accent:           var(--brand);
+  --accent-hover:     var(--brand-deep);
+  --accent-soft:      var(--brand-soft);
+  --accent-fg:        var(--ink-on-brand);
+
+  --brand-red:        var(--accent-2);
+  --brand-green:      var(--verified);
+  --brand-purple:     #b07ad6;
+
+  --radius-xs:        2px;
+  --shadow-xs:        0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Глобальный сброс + base + atmospheric backdrop
+   ────────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-variation-settings: "opsz" 14;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Атмосферный backdrop: тёплое свечение в правом верхнем углу + тонкая
+   dot-сетка по всему фону. Создаёт «академический workshop»-feel без визуального шума. */
+body {
+  background-image:
+    radial-gradient(ellipse 80vw 60vh at 90% -10%, rgba(233, 162, 59, 0.07), transparent 60%),
+    radial-gradient(ellipse 60vw 40vh at -10% 110%, rgba(159, 214, 73, 0.04), transparent 70%);
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(245, 240, 227, 0.025) 1px, transparent 0);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 70vw 70vh at 50% 30%, black 30%, transparent 80%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+  margin: 0;
+}
+
+h1 { font-variation-settings: "opsz" 96, "SOFT" 30; }
+h2 { font-variation-settings: "opsz" 72, "SOFT" 40; }
+h3 { font-variation-settings: "opsz" 36, "SOFT" 50; }
+
+p { margin: 0; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Очень specific link-style для академической прозы */
+.prose a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(233, 162, 59, 0.4);
+  transition: text-decoration-color var(--duration-base) var(--ease);
+}
+.prose a:hover { text-decoration-color: var(--brand); }
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--ink-on-brand);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--paper);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* Уважаем prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

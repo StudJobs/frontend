@@ -1,8 +1,14 @@
+/* ============================================================================
+   global.css — глобальные wrapper-классы, которые НЕ покрыты tokens.css и
+   components.css. Здесь живут только page-frame, mj-gradient-divider, footer
+   и базовые ссылки. Всё остальное (header, кнопки, карточки) — в components.
+   ============================================================================ */
+
 .page-frame {
   width: 100%;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--paper);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -10,152 +16,23 @@
   box-sizing: border-box;
 }
 
-.mj-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: nowrap;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 clamp(16px, 4vw, 64px);
-  height: var(--size-header);
-  box-sizing: border-box;
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  backdrop-filter: blur(8px);
-}
-
-.mj-logo img {
-  display: block;
-  height: 44px;
-  width: auto;
-  object-fit: contain;
-  cursor: pointer;
-  filter: brightness(0) invert(1);
-}
-
-.mj-search {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  flex: 1;
-  max-width: 480px;
-  margin: 0 var(--space-6);
-}
-
-.mj-search-input {
-  width: 100%;
-  height: 38px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-elev);
-  border: 1px solid var(--border);
-  padding: 0 var(--space-4);
-  color: var(--fg);
-  font-size: 14px;
-  transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
-}
-
-.mj-search-input:hover { border-color: var(--border-strong); }
-.mj-search-input:focus { border-color: var(--accent); box-shadow: var(--shadow-glow); outline: none; }
-
-.mj-search-icon {
-  width: 24px;
-  opacity: 0.6;
-  filter: brightness(0) invert(1);
-}
-
-.mj-nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  white-space: nowrap;
-}
-
-.mj-nav a {
-  color: var(--fg-muted);
-  font-weight: 500;
-  font-size: 14px;
-  text-decoration: none;
-  position: relative;
-  padding: var(--space-2) 0;
-  transition: color var(--duration-fast) var(--ease);
-  cursor: pointer;
-}
-
-.mj-nav a:hover { color: var(--fg); opacity: 1; }
-
-.mj-nav a.active-nav {
-  color: var(--fg);
-  font-weight: 600;
-}
-
-.mj-nav a.active-nav::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -22px;
-  height: 2px;
-  width: 100%;
-  background: var(--accent);
-  border-radius: var(--radius-pill);
-}
-
-.mj-profile {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-elev);
-  border: 1px solid var(--border);
-  margin-left: var(--space-3);
-  cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
-}
-
-.mj-profile:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
-}
-
-.mj-profile img {
-  width: 18px;
-  height: 18px;
-  filter: brightness(0) invert(1);
-  opacity: 0.8;
-}
-
-/* Градиентный делитель — мягкий fade в чёрный (визуальный «вход» в hero) */
+/* Градиентный делитель — мягкий fade (используется на главной для разделения hero и контента) */
 .mj-gradient-divider {
   width: 100%;
   height: clamp(40px, 6vw, 80px);
-  background: linear-gradient(to bottom, var(--surface) 0%, var(--bg) 100%);
+  background: linear-gradient(to bottom, transparent 0%, var(--paper) 100%);
 }
 
 .mj-footer {
-  color: var(--fg-subtle);
-  font-size: 12px;
-  line-height: 1.6;
-  padding: var(--space-6) clamp(16px, 4vw, 64px);
-  border-top: 1px solid var(--border);
+  color: var(--ink-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  padding: var(--space-8) var(--space-6);
+  border-top: 1px solid var(--border-soft);
   margin-top: auto;
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-wide);
 }
 
 a { text-decoration: none; cursor: pointer; transition: opacity var(--duration-fast) var(--ease); }
 a:hover { opacity: 0.85; }
-
-@media (max-width: 768px) {
-  .mj-header {
-    flex-wrap: wrap;
-    height: auto;
-    padding: var(--space-3) var(--space-4);
-    gap: var(--space-3);
-  }
-  .mj-search { order: 3; flex-basis: 100%; margin: 0; }
-  .mj-nav { gap: var(--space-4); }
-  .mj-nav a { font-size: 13px; }
-  .mj-nav a.active-nav::after { bottom: -10px; }
-}
