@@ -12,8 +12,9 @@ import SkillsInput from "../components/ui/SkillsInput";
 const extractAvatarUrl = (fileInfo: any): string | undefined =>
   fileInfo?.download_url || fileInfo?.direct_url || fileInfo?.url;
 
+// fallback на /api/v1 если VITE_API_URL пуст — иначе fetch уйдёт мимо vite-proxy
 const API_BASE =
-  (import.meta as any).env?.VITE_API_URL?.replace(/\/+$/, "") || "";
+  ((import.meta as any).env?.VITE_API_URL || "/api/v1").replace(/\/+$/, "");
 
 const AVATAR_PREFIX = "user_avatar_";
 const hasAvatarPrefix = (v?: string | null) =>

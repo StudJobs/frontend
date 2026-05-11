@@ -96,6 +96,16 @@ export default function HRTasks() {
       setCreateErr("Введите название задачи");
       return;
     }
+    if (newDeadline.trim()) {
+      // Дедлайн в прошлом — задача нерешаема. Проверяем по локальной полуночи.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dl = new Date(newDeadline);
+      if (!Number.isNaN(dl.getTime()) && dl < today) {
+        setCreateErr("Дедлайн не может быть в прошлом");
+        return;
+      }
+    }
     setCreateBusy(true);
     setCreateErr("");
     try {
@@ -233,6 +243,7 @@ export default function HRTasks() {
                 <input
                   type="date"
                   className="mj-vac-input"
+                  min={new Date().toISOString().slice(0, 10)}
                   value={newDeadline}
                   onChange={(e) => setNewDeadline(e.target.value)}
                 />

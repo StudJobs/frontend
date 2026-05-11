@@ -5,8 +5,9 @@ export type ResumeInfo = {
   url: string | null;
 };
 
+// fallback на /api/v1 если VITE_API_URL пуст — иначе fetch уйдёт мимо vite-proxy
 const API_BASE =
-  (import.meta as any).env?.VITE_API_URL?.replace(/\/+$/, "") || "";
+  ((import.meta as any).env?.VITE_API_URL || "/api/v1").replace(/\/+$/, "");
 
 const safeGet = <T = any>(obj: any, path: string[], fallback: T): T => {
   let cur: any = obj;

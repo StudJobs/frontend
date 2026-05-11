@@ -1396,11 +1396,10 @@ export default function ProfileHRFull() {
                     <div style={{ marginTop: 18, fontSize: 12, opacity: 0.6, marginBottom: 6 }}>График</div>
                     <div style={{ fontSize: 16, fontWeight: 700 }}>
                       {isVacEdit ? (
-                        <input
+                        <select
                           value={vacEditForm.schedule}
                           name="schedule"
                           onChange={onVacEditField}
-                          placeholder="5/2"
                           style={{
                             fontSize: 16,
                             fontWeight: 700,
@@ -1409,7 +1408,14 @@ export default function ProfileHRFull() {
                             padding: "8px 10px",
                             width: 240,
                           }}
-                        />
+                        >
+                          <option value="">— не выбран —</option>
+                          <option value="5/2">5/2</option>
+                          <option value="2/2">2/2</option>
+                          <option value="3/3">3/3</option>
+                          <option value="Гибкий">Гибкий</option>
+                          <option value="Сменный">Сменный</option>
+                        </select>
                       ) : (
                         selectedVacancy.schedule || "—"
                       )}
@@ -1420,11 +1426,10 @@ export default function ProfileHRFull() {
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 700 }}>
                       {isVacEdit ? (
-                        <input
+                        <select
                           value={vacEditForm.work_format}
                           name="work_format"
                           onChange={onVacEditField}
-                          placeholder="Гибрид / Офис / Удалёнка"
                           style={{
                             fontSize: 16,
                             fontWeight: 700,
@@ -1433,7 +1438,12 @@ export default function ProfileHRFull() {
                             padding: "8px 10px",
                             width: 320,
                           }}
-                        />
+                        >
+                          <option value="">— не выбран —</option>
+                          <option value="Офис">Офис</option>
+                          <option value="Удалёнка">Удалёнка</option>
+                          <option value="Гибрид">Гибрид</option>
+                        </select>
                       ) : (
                         selectedVacancy.work_format || "—"
                       )}
@@ -1563,11 +1573,10 @@ export default function ProfileHRFull() {
                     <div style={{ marginTop: 18, fontSize: 12, opacity: 0.6, marginBottom: 6 }}>Статус</div>
                     <div style={{ fontSize: 18, fontWeight: 700 }}>
                       {isVacEdit ? (
-                        <input
-                          value={vacEditForm.position_status}
+                        <select
+                          value={vacEditForm.position_status || "open"}
                           name="position_status"
                           onChange={onVacEditField}
-                          placeholder="open"
                           style={{
                             fontSize: 16,
                             fontWeight: 700,
@@ -1576,7 +1585,11 @@ export default function ProfileHRFull() {
                             padding: "8px 10px",
                             width: 220,
                           }}
-                        />
+                        >
+                          <option value="open">Открыта</option>
+                          <option value="paused">На паузе</option>
+                          <option value="closed">Закрыта</option>
+                        </select>
                       ) : (
                         selectedVacancy.position_status || "—"
                       )}
@@ -1777,23 +1790,39 @@ export default function ProfileHRFull() {
                   </div>
 
                   <div className="mj-field">
-                    <label className="mj-label">График (schedule)</label>
-                    <input className="mj-input" name="schedule" value={vacancyForm.schedule} onChange={onVacancyField} placeholder="5/2" />
+                    <label className="mj-label">График</label>
+                    <select className="mj-input" name="schedule" value={vacancyForm.schedule} onChange={onVacancyField}>
+                      <option value="">— не выбран —</option>
+                      <option value="5/2">5/2</option>
+                      <option value="2/2">2/2</option>
+                      <option value="3/3">3/3</option>
+                      <option value="Гибкий">Гибкий</option>
+                      <option value="Сменный">Сменный</option>
+                    </select>
                   </div>
 
                   <div className="mj-field">
-                    <label className="mj-label">Формат работы (work_format)</label>
-                    <input className="mj-input" name="work_format" value={vacancyForm.work_format} onChange={onVacancyField} placeholder="Удалёнка / Офис / Гибрид" />
+                    <label className="mj-label">Формат работы</label>
+                    <select className="mj-input" name="work_format" value={vacancyForm.work_format} onChange={onVacancyField}>
+                      <option value="">— не выбран —</option>
+                      <option value="Офис">Офис</option>
+                      <option value="Удалёнка">Удалёнка</option>
+                      <option value="Гибрид">Гибрид</option>
+                    </select>
                   </div>
 
                   <div className="mj-field">
-                    <label className="mj-label">Опыт (experience, число)</label>
-                    <input className="mj-input" name="experience" value={vacancyForm.experience} onChange={onVacancyField} placeholder="1" />
+                    <label className="mj-label">Опыт (лет)</label>
+                    <input className="mj-input" name="experience" value={vacancyForm.experience} onChange={onVacancyField} placeholder="1" type="number" min="0" />
                   </div>
 
                   <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
-                    <label className="mj-label">Статус (position_status)</label>
-                    <input className="mj-input" name="position_status" value={vacancyForm.position_status} onChange={onVacancyField} placeholder="open" />
+                    <label className="mj-label">Статус позиции</label>
+                    <select className="mj-input" name="position_status" value={vacancyForm.position_status || "open"} onChange={onVacancyField}>
+                      <option value="open">Открыта</option>
+                      <option value="paused">На паузе</option>
+                      <option value="closed">Закрыта</option>
+                    </select>
                   </div>
 
                   <div className="mj-field" style={{ gridColumn: "1 / -1" }}>

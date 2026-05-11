@@ -115,19 +115,40 @@ export default function Auth() {
       const email = trimmedEmail.toLowerCase();
       const guessedRole = getRoleForEmail(email);
 
-      const payload = {
-        email,
-        password: trimmedPassword,
-        role: guessedRole,
-      };
+      // Бэк требует role в payload (для проверки role+email+password).
+      // Если localStorage `userRoles` пуст (новый браузер, очищено),
+      // guessedRole = ROLE_STUDENT и логин «провалится» для других ролей.
+      // Поэтому пробуем угаданную роль, а на «invalid» пробежимся по остальным.
+      const tryOrder: BackendRole[] = [
+        guessedRole,
+        ...(["ROLE_STUDENT", "ROLE_EMPLOYER", "ROLE_COMPANY_OWNER", "ROLE_EXPERT"] as BackendRole[])
+          .filter((r) => r !== guessedRole),
+      ];
 
-      console.log("Login payload:", payload);
+      let resp: any = null;
+      let lastErr: any = null;
 
-      const resp = await apiGateway({
-        method: "POST",
-        url: "/auth/login",
-        data: payload,
-      });
+      for (const candidateRole of tryOrder) {
+        try {
+          resp = await apiGateway({
+            method: "POST",
+            url: "/auth/login",
+            data: { email, password: trimmedPassword, role: candidateRole },
+          });
+          if (resp) break;
+        } catch (e: any) {
+          lastErr = e;
+          const raw = String(e?.message || e?.detail || JSON.stringify(e) || "");
+          // Если ошибка — «не та роль / пользователь не найден», пробуем следующую.
+          // На прочих ошибках (5xx, network) прекращаем перебор.
+          if (!/invalid|not found|wrong role|unauthorized/i.test(raw)) {
+            throw e;
+          }
+          resp = null;
+        }
+      }
+
+      if (!resp) throw lastErr || new Error("Не удалось войти");
 
       const { data, token, role } = pickAuthData(resp);
       console.log("Авторизация успешна:", data);
@@ -138,6 +159,14 @@ export default function Auth() {
 
       const finalRole: BackendRole = ((role || guessedRole) as BackendRole);
       localStorage.setItem("role", finalRole);
+
+      // Запоминаем email→role, чтобы при следующем логине угадать с первой попытки.
+      try {
+        const raw = localStorage.getItem("userRoles");
+        const map: Record<string, BackendRole> = raw ? JSON.parse(raw) : {};
+        map[email] = finalRole;
+        localStorage.setItem("userRoles", JSON.stringify(map));
+      } catch { /* noop */ }
 
       setRedirectTo(
         finalRole === "ROLE_EMPLOYER"

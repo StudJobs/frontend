@@ -24,8 +24,9 @@ type CompanyDTO = {
 const extractAvatarUrl = (fileInfo: any): string | undefined =>
   fileInfo?.download_url || fileInfo?.direct_url || fileInfo?.url;
 
+// fallback на /api/v1 если VITE_API_URL пуст — иначе fetch уйдёт мимо vite-proxy
 const API_BASE =
-  (import.meta as any).env?.VITE_API_URL?.replace(/\/+$/, "") || "";
+  ((import.meta as any).env?.VITE_API_URL || "/api/v1").replace(/\/+$/, "");
 
 const AVATAR_PREFIX = "user_avatar_";
 const hasAvatarPrefix = (v?: string | null) =>
@@ -138,9 +139,11 @@ function CompanyCarousel({
                 style={{
                   minWidth: 260,
                   maxWidth: 260,
-                  borderRadius: 18,
-                  background: "#fff",
-                  boxShadow: "0 6px 22px rgba(0,0,0,0.08)",
+                  borderRadius: 14,
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-sm)",
+                  color: "var(--ink)",
                   padding: 14,
                   position: "relative",
                 }}
@@ -175,10 +178,17 @@ function CompanyCarousel({
                     style={{
                       width: 52,
                       height: 52,
-                      borderRadius: 14,
-                      background: "#f2f2f2",
+                      borderRadius: 10,
+                      background: "var(--surface-elev)",
                       overflow: "hidden",
                       flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "var(--ink-muted)",
                     }}
                   >
                     {isStr(c.logo_url) ? (
@@ -187,33 +197,37 @@ function CompanyCarousel({
                         alt=""
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
-                    ) : null}
+                    ) : (
+                      <span>{(c.name || "?").slice(0, 1).toUpperCase()}</span>
+                    )}
                   </div>
 
                   <div style={{ minWidth: 0 }}>
                     <div
                       style={{
-                        fontWeight: 800,
+                        fontWeight: 600,
+                        fontFamily: "var(--font-display)",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
+                        color: "var(--ink)",
                       }}
                       title={c.name}
                     >
                       {c.name || "Компания"}
                     </div>
 
-                    <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
                       {c.city || "—"} • {c.type?.value || "—"}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9 }}>
+                <div style={{ marginTop: 10, fontSize: 13, color: "var(--brand)" }}>
                   {isStr(c.site) ? (
                     <span style={{ textDecoration: "underline" }}>{c.site}</span>
                   ) : (
-                    "—"
+                    <span style={{ color: "var(--ink-subtle)" }}>—</span>
                   )}
                 </div>
 
@@ -221,11 +235,12 @@ function CompanyCarousel({
                   style={{
                     marginTop: 8,
                     fontSize: 13,
-                    opacity: 0.85,
+                    color: "var(--ink-muted)",
                     display: "-webkit-box",
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: "vertical" as any,
                     overflow: "hidden",
+                    lineHeight: 1.5,
                   }}
                   title={c.description}
                 >
@@ -538,12 +553,11 @@ export default function ProfileHREdit() {
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
 
+    // HR не «специализируется» по направлению Мосполитеха — поля профессии нет.
     const requiredFields: Array<keyof typeof formData> = [
       "surname",
       "name",
-      "age",
       "email",
-      "profile",
     ];
 
     requiredFields.forEach((field) => {
@@ -589,7 +603,6 @@ export default function ProfileHREdit() {
         age: formData.age ? Number(formData.age) : undefined,
         email: formData.email.trim() || undefined,
         telegram: normalizeTelegram(formData.telegram),
-        profession_category: formData.profile || undefined,
         description: formData.description || undefined,
       };
 
@@ -669,9 +682,7 @@ export default function ProfileHREdit() {
 
           <div className="form-row">
             <div className="form-field">
-              <label className="label-title">
-                Возраст <span className="required">*</span>
-              </label>
+              <label className="label-title">Возраст</label>
               <input
                 name="age"
                 type="number"
@@ -680,39 +691,6 @@ export default function ProfileHREdit() {
                 className={errors.age ? "error" : ""}
               />
               {errors.age && <p className="error-text">{errors.age}</p>}
-            </div>
-
-            <div className="form-field">
-              <label className="label-title">
-                Профиль <span className="required">*</span>
-              </label>
-              <select
-                name="profile"
-                value={formData.profile}
-                onChange={handleChange}
-                className={errors.profile ? "error" : ""}
-              >
-                <option value="">Выберите</option>
-                {[
-                  "АСОИУ",
-                  "Программная инженерия",
-                  "Информационная безопасность",
-                  "Бизнес-информатика",
-                  "Мехатроника и робототехника",
-                  "Дизайн",
-                  "Журналистика",
-                  "Геймдев",
-                  "Веб-дизайн",
-                  "Машиностроение",
-                  "Ювелирное дело",
-                  "Fullstack Developer",
-                ].map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-              {errors.profile && <p className="error-text">{errors.profile}</p>}
             </div>
           </div>
 

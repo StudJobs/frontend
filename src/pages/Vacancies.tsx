@@ -342,10 +342,18 @@ export default function Vacancies() {
 
   const meLocal = getLocalUserLike();
   const jwt = getJwtPayload();
+  const roleFromLS = (() => {
+    try { return (localStorage.getItem("role") || "").trim(); } catch { return ""; }
+  })();
 
-  const canRespond = isStudent(meApi) || isStudent(meLocal) || isStudent(jwt);
+  // Сначала пробуем явно сохранённую роль (после логина точно есть), потом профиль из API.
+  const canRespond =
+    roleFromLS === ROLE_STUDENT ||
+    isStudent(meApi) || isStudent(meLocal) || isStudent(jwt);
 
-  const hideListViewButton = isHr(meApi) || isHr(meLocal) || isHr(jwt);
+  const hideListViewButton =
+    roleFromLS === ROLE_EMPLOYER || roleFromLS === ROLE_HR ||
+    isHr(meApi) || isHr(meLocal) || isHr(jwt);
 
   const currentPage = pagination.current_page ?? (filters.page as any) ?? 1;
   const pages = pagination.pages;
@@ -415,6 +423,30 @@ export default function Vacancies() {
     applyFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Авто-применение фильтров при изменении любого поля.
+  // Debounce 400 мс — чтобы не дёргать бэкенд на каждый ввод символа.
+  const firstAutoRef = useRef(true);
+  useEffect(() => {
+    if (firstAutoRef.current) {
+      firstAutoRef.current = false;
+      return;
+    }
+    const t = window.setTimeout(() => {
+      applyFilters({ page: 1 });
+    }, 400);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    filters.search_title,
+    filters.work_format,
+    filters.schedule,
+    filters.min_experience,
+    filters.max_experience,
+    salaryFrom,
+    salaryTo,
+    skillSlugs.join(","),
+  ]);
 
   useEffect(() => {
     (async () => {

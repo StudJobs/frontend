@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/hr-dashboard.css";
@@ -206,25 +206,6 @@ export default function HRDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  // Mock: 14-дневный sparkline по откликам/сабмишенам. До v1.0 заменим
-  // на /hr/stats/timeline?days=14. См. ROADMAP.
-  const sparkline = useMemo(() => mockSparkline(activity.length), [activity.length]);
-
-  // Mock: топ навыков среди откликнувшихся. До v1.0 заменим на агрегацию
-  // по skill_slugs в Search-сервисе.
-  const topSkills = useMemo(() => MOCK_TOP_SKILLS, []);
-
-  // Mock: воронка conversion
-  const funnel = useMemo(
-    () => [
-      { lbl: "Просмотры вакансий", val: 1240, demo: true },
-      { lbl: "Отклики", val: Math.max(activity.filter((a) => a.kind === "application").length, 14) },
-      { lbl: "На интервью", val: 6, demo: true },
-      { lbl: "Офферы", val: 2, demo: true },
-    ],
-    [activity]
-  );
-
   return (
     <div className="page-frame">
       <Header />
@@ -281,68 +262,6 @@ export default function HRDashboard() {
               link={{ to: "/hr-profile", text: "К вакансиям" }}
               loading={loading}
             />
-          </section>
-
-          {/* GRID: sparkline + funnel | top skills */}
-          <section className="hrd__grid">
-            {/* Sparkline */}
-            <div className="hrd__card hrd__card--wide">
-              <div className="hrd__card-head">
-                <span className="eyebrow">— ДИНАМИКА</span>
-                <h2 className="hrd__card-title">События за 14 дней</h2>
-                <span className="mono subtle">отклики · сабмишены · approvals</span>
-              </div>
-              <Sparkline data={sparkline} />
-              <div className="hrd__legend">
-                <span className="hrd__legend-dot" style={{ background: "var(--brand)" }} /> отклики
-                <span className="hrd__legend-dot" style={{ background: "var(--verified)" }} /> сабмишены
-                <span className="mono subtle" style={{ marginLeft: "auto" }}>demo · timeline</span>
-              </div>
-            </div>
-
-            {/* Top skills */}
-            <div className="hrd__card">
-              <div className="hrd__card-head">
-                <span className="eyebrow">— ТОП НАВЫКОВ</span>
-                <h2 className="hrd__card-title">У ваших кандидатов</h2>
-              </div>
-              <ul className="hrd__skills">
-                {topSkills.map((s, i) => (
-                  <li key={s.slug} className="hrd__skill-row">
-                    <span className="hrd__skill-rank">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="sj-skill">{s.slug}</span>
-                    <span className="hrd__skill-bar">
-                      <span className="hrd__skill-bar-fill" style={{ width: `${s.value}%` }} />
-                    </span>
-                    <span className="mono subtle">{s.value}%</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mono subtle" style={{ marginTop: 12 }}>demo · агрегация в Search</div>
-            </div>
-          </section>
-
-          {/* FUNNEL */}
-          <section className="hrd__card hrd__funnel-card">
-            <div className="hrd__card-head">
-              <span className="eyebrow">— ВОРОНКА</span>
-              <h2 className="hrd__card-title">Просмотр → оффер</h2>
-            </div>
-            <div className="hrd__funnel">
-              {funnel.map((f, i) => {
-                const width = i === 0 ? 100 : Math.max(8, Math.round((f.val / funnel[0].val) * 100));
-                return (
-                  <div key={f.lbl} className="hrd__funnel-row">
-                    <div className="hrd__funnel-bar" style={{ width: `${width}%` }}>
-                      <span className="hrd__funnel-val">{f.val.toLocaleString("ru-RU")}</span>
-                    </div>
-                    <div className="hrd__funnel-lbl">
-                      {f.lbl} {f.demo && <span className="mono subtle">· demo</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </section>
 
           {/* Two cols: my top vacancies | activity */}
@@ -477,121 +396,3 @@ function StatTile({
   );
 }
 
-/* ── Sparkline (mock) ──────────────────────────────────────────────────── */
-
-function mockSparkline(activityCount: number): { apps: number[]; subs: number[] } {
-  const days = 14;
-  // Базовая псевдо-случайная волна; в зависимости от наличия activity усиливаем
-  const seed = 42 + activityCount;
-  let s = seed;
-  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  const apps: number[] = [];
-  const subs: number[] = [];
-  for (let i = 0; i < days; i++) {
-    apps.push(Math.floor(rnd() * 8 + (i > days - 5 ? 5 : 0)));
-    subs.push(Math.floor(rnd() * 5 + (i > days - 3 ? 3 : 0)));
-  }
-  return { apps, subs };
-}
-
-function Sparkline({ data }: { data: { apps: number[]; subs: number[] } }) {
-  const w = 720;
-  const h = 160;
-  const pad = { l: 24, r: 18, t: 18, b: 28 };
-  const allMax = Math.max(...data.apps, ...data.subs, 1);
-  const days = data.apps.length;
-  const stepX = (w - pad.l - pad.r) / (days - 1);
-
-  const toPath = (arr: number[]) =>
-    arr
-      .map((v, i) => {
-        const x = pad.l + i * stepX;
-        const y = h - pad.b - (v / allMax) * (h - pad.t - pad.b);
-        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ");
-
-  const fillPath = (arr: number[], color: string) => {
-    const top = toPath(arr);
-    const last = arr.length - 1;
-    return (
-      <path
-        d={`${top} L${(pad.l + last * stepX).toFixed(1)},${h - pad.b} L${pad.l.toFixed(1)},${h - pad.b} Z`}
-        fill={color}
-        opacity={0.12}
-      />
-    );
-  };
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="hrd__spark" preserveAspectRatio="none">
-      {/* gridlines */}
-      {[0.25, 0.5, 0.75].map((t) => {
-        const y = pad.t + t * (h - pad.t - pad.b);
-        return (
-          <line
-            key={t}
-            x1={pad.l}
-            x2={w - pad.r}
-            y1={y}
-            y2={y}
-            stroke="var(--border-soft)"
-            strokeWidth="1"
-            strokeDasharray="2 4"
-          />
-        );
-      })}
-
-      {fillPath(data.apps, "var(--brand)")}
-      {fillPath(data.subs, "var(--verified)")}
-
-      <path
-        d={toPath(data.apps)}
-        fill="none"
-        stroke="var(--brand)"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <path
-        d={toPath(data.subs)}
-        fill="none"
-        stroke="var(--verified)"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        strokeDasharray="0"
-      />
-
-      {/* x-axis day labels (только -14, -7, today) */}
-      {[0, Math.floor(days / 2), days - 1].map((i) => (
-        <text
-          key={i}
-          x={pad.l + i * stepX}
-          y={h - 8}
-          fontFamily="JetBrains Mono, monospace"
-          fontSize="10"
-          fill="var(--ink-subtle)"
-          textAnchor="middle"
-        >
-          {i === days - 1 ? "сегодня" : `-${days - 1 - i}д`}
-        </text>
-      ))}
-
-      {/* points last */}
-      <circle cx={pad.l + (days - 1) * stepX} cy={h - pad.b - (data.apps[days - 1] / allMax) * (h - pad.t - pad.b)} r="4" fill="var(--brand)" />
-      <circle cx={pad.l + (days - 1) * stepX} cy={h - pad.b - (data.subs[days - 1] / allMax) * (h - pad.t - pad.b)} r="4" fill="var(--verified)" />
-    </svg>
-  );
-}
-
-/* ── Top skills (mock) ─────────────────────────────────────────────────── */
-
-const MOCK_TOP_SKILLS = [
-  { slug: "go", value: 92 },
-  { slug: "postgres", value: 78 },
-  { slug: "docker", value: 71 },
-  { slug: "react", value: 64 },
-  { slug: "kubernetes", value: 52 },
-  { slug: "typescript", value: 48 },
-];

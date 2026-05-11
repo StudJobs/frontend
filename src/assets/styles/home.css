@@ -7,7 +7,7 @@
 .home-hero {
   position: relative;
   padding: clamp(var(--space-10), 7vw, var(--space-20)) 0;
-  overflow: hidden;
+  /* overflow: hidden обрезает крупные asсenders в Fraunces; убираем */
 }
 
 .home-hero::before {
@@ -43,9 +43,12 @@
   font-size: var(--text-4xl);
   font-weight: 400;
   font-variation-settings: "opsz" 144, "SOFT" 30;
-  line-height: 1.04;
-  letter-spacing: -0.04em;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   color: var(--ink);
+  padding-top: 0.08em;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .home-hero__title em {
@@ -204,31 +207,57 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--border);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color var(--duration-base) var(--ease),
+    transform var(--duration-base) var(--ease),
+    box-shadow var(--duration-base) var(--ease);
+}
+
+.home-step:hover {
+  border-color: var(--border-brand);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .home-step::before {
   content: "";
   position: absolute;
   top: -1px;
-  left: 0;
-  width: 32px;
-  height: 1px;
+  left: var(--space-5);
+  width: 36px;
+  height: 2px;
   background: var(--brand);
+  border-radius: var(--radius-pill);
 }
 
 .home-step__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
   color: var(--brand);
 }
+.home-step__mark::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
 
 .home-step__title {
   font-family: var(--font-display);
-  font-size: var(--text-md);
+  font-size: var(--text-lg);
   font-weight: 500;
   letter-spacing: var(--tracking-tight);
   color: var(--ink);

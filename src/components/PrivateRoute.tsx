@@ -64,13 +64,25 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
 
   if (userRole === "ROLE_COMPANY_OWNER") {
     const p = location.pathname;
+    // Владельцу компании доступны: профиль компании, HR-дашборд, микрозадачи,
+    // листинг вакансий/компаний (для контекста), отклики, экспертная очередь
+    // (если внутри компании есть встроенные верификаторы) недоступна.
     const ok =
+      p === "/" ||
       p === "/company-profile" ||
       p === "/company-profile/edit" ||
-      p.startsWith("/company-profile/");
+      p.startsWith("/company-profile/") ||
+      p === "/hr" ||
+      p === "/hr/tasks" ||
+      p === "/hr/applications" ||
+      p === "/vacancies" ||
+      p === "/companies" ||
+      p === "/users" ||
+      p === "/tasks" ||
+      p.startsWith("/u/");
 
     if (!ok) {
-      return <Navigate to="/company-profile" replace />;
+      return <Navigate to="/hr" replace />;
     }
   }
 

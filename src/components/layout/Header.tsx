@@ -130,7 +130,19 @@ export default function Header() {
 
   function handleLogout() {
     try {
-      localStorage.clear();
+      // Чистим только auth-данные, оставляя email→role mapping и локальные
+      // кеши компании, чтобы при повторном логине сразу подсунуть нужный role
+      // и не получить «Invalid email or password» из-за рассинхрона role.
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user");
+      localStorage.removeItem("me");
+      localStorage.removeItem("auth");
+      localStorage.removeItem("profile");
+      localStorage.removeItem("hrProfile");
+      localStorage.removeItem("companyProfile");
+      localStorage.removeItem("companyMe");
+      localStorage.removeItem("onboarding_dismissed");
     } catch {
       /* noop */
     }
@@ -197,7 +209,6 @@ export default function Header() {
                   <div className="sj-usermenu__dropdown" role="menu">
                     <div className="sj-usermenu__head">
                       <div className="sj-usermenu__role">{roleLabel(role)}</div>
-                      <div className="sj-usermenu__id">id · {shortId()}</div>
                     </div>
                     <button
                       className="sj-usermenu__item"
@@ -266,14 +277,3 @@ function roleLabel(role: string | null): string {
   }
 }
 
-function shortId(): string {
-  try {
-    const raw = localStorage.getItem("me") || localStorage.getItem("user") || "";
-    if (!raw) return "—";
-    const u = JSON.parse(raw);
-    const id = (u?.id || u?.uuid || u?.user_id || "").toString();
-    return id ? id.slice(0, 8) : "—";
-  } catch {
-    return "—";
-  }
-}

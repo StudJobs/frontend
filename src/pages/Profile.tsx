@@ -29,8 +29,10 @@ type UserProfile = {
 
 const unwrap = (resp: any) => resp?.data ?? resp;
 
+// Если VITE_API_URL не задан в .env — fallback на относительный /api/v1, иначе
+// fetch уйдёт мимо vite-proxy (на /users/...) и сервер dev-режима вернёт 404.
 const API_BASE =
-  (import.meta as any).env?.VITE_API_URL?.replace(/\/+$/, "") || "";
+  ((import.meta as any).env?.VITE_API_URL || "/api/v1").replace(/\/+$/, "");
 
 const AVATAR_PREFIX = "user_avatar_";
 const RESUME_PREFIX = "user_resume_";

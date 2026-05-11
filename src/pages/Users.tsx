@@ -409,7 +409,37 @@ export default function Users() {
                   <img src={cardDecor(idx)} alt="" />
                 </div>
 
-                <h3>{name}</h3>
+                <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "var(--surface-elev)",
+                      border: "1px solid var(--border)",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "var(--ink-muted)",
+                    }}
+                  >
+                    {u.avatar_url ? (
+                      <img
+                        src={u.avatar_url}
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <span>{(name || "?").slice(0, 1).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <h3 style={{ margin: 0 }}>{name}</h3>
+                </div>
 
                 {Array.isArray(u.skill_slugs) && u.skill_slugs.length ? (
                   <div style={{ marginTop: 6 }}>

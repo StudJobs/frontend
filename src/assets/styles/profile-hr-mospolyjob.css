@@ -144,53 +144,75 @@
   position: relative;
   border-radius: var(--radius-lg);
   min-height: 180px;
-  color: #ffffff;
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: clamp(18px, 2vw, 24px);
   overflow: hidden;
-  transition: transform var(--duration-base) var(--ease), box-shadow var(--duration-base) var(--ease);
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform var(--duration-base) var(--ease),
+              border-color var(--duration-base) var(--ease),
+              box-shadow var(--duration-base) var(--ease);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .hr-card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
 }
 
-.hr-card--red    { background: linear-gradient(135deg, #ef4d5d 0%, #c93140 100%); }
-.hr-card--green  { background: linear-gradient(135deg, #4bb832 0%, #2d8c1e 100%); }
-.hr-card--purple { background: linear-gradient(135deg, #8e54b3 0%, #5d2f80 100%); }
+/* Все 3 варианта — единая пастельная гамма с тонким цветным акцентом
+   слева (4px-полоска). Карточки не «кричат» цветом всей площадью, как раньше. */
+.hr-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 0;
+  background: var(--brand);
+  opacity: 0.85;
+}
+
+.hr-card--red::after    { background: #d76262; }
+.hr-card--green::after  { background: #9fd649; }
+.hr-card--purple::after { background: #c084d2; }
 
 .hr-card h3 {
+  font-family: var(--font-display);
   font-size: clamp(18px, 2vw, 22px);
-  font-weight: 700;
+  font-weight: 500;
   margin: 0 0 var(--space-2);
-  letter-spacing: -0.01em;
-  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  color: #ffffff;
+  letter-spacing: -0.015em;
+  color: var(--ink);
 }
 
 .hr-card-link {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  color: #ffffff;
+  color: var(--brand);
   align-self: flex-start;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(233, 162, 59, 0.4);
   padding-bottom: 2px;
+  transition: border-color var(--duration-base) var(--ease);
 }
-.hr-card-link:hover { border-bottom-color: #ffffff; opacity: 1; }
+.hr-card-link:hover { border-bottom-color: var(--brand); }
 
-.hr-card-decor img {
+.hr-card-decor {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.18;
+  pointer-events: none;
+}
+.hr-card-decor img {
+  position: absolute;
+  right: -20%;
+  bottom: -20%;
+  width: 60%;
+  height: auto;
+  opacity: 0.06;
+  filter: invert(1);
 }
 
 .hr-carousel { margin-top: var(--space-4); overflow: hidden; }

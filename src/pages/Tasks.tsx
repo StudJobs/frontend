@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-hr-mospolyjob.css";
 import "../assets/styles/vacancies-mospolyjob.css";
@@ -54,7 +54,8 @@ const getMyId = (): string => {
 
 const isStudentRole = (role?: string) => {
   const r = String(role || "").toUpperCase();
-  return r.includes("STUDENT") || r === "ROLE_DEVELOPER";
+  // Принимаем как чистый "STUDENT", так и "ROLE_STUDENT" и legacy ROLE_DEVELOPER.
+  return r === "STUDENT" || r === "ROLE_STUDENT" || r === "ROLE_DEVELOPER" || r.includes("STUDENT");
 };
 
 const getMyRole = (): string => {
@@ -122,6 +123,19 @@ export default function Tasks() {
     fetchTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const firstAutoRef = useRef(true);
+  useEffect(() => {
+    if (firstAutoRef.current) {
+      firstAutoRef.current = false;
+      return;
+    }
+    const t = window.setTimeout(() => {
+      fetchTasks({ page: 1 });
+    }, 400);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.q, filters.reward_min, filters.skill_slugs.join(",")]);
 
   const reset = () => {
     const base = { page: 1, limit: DEFAULT_LIMIT, skill_slugs: [] as string[], q: "", reward_min: "" };
