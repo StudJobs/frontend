@@ -237,11 +237,6 @@ export const AchievementsAPI = {
     return { id };
   },
 
-  async rename(_oldId: string, _newName: string) {
-    console.warn("Переименование достижений не реализовано на бэке");
-    return Promise.resolve();
-  },
-
   async remove(id: string) {
     await apiGateway({
       method: "DELETE",

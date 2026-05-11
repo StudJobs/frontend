@@ -6,35 +6,22 @@ const isStr = (v: any) => typeof v === "string" && v.trim().length > 0;
 
 async function searchCompanies(query: string): Promise<CompanyDTO[]> {
   const q = query.trim();
-
-  const candidates = [
-    { method: "GET", url: "/company", params: q ? { q } : undefined },
-    { method: "GET", url: "/companies", params: q ? { q } : undefined },
-    { method: "GET", url: "/company/search", params: q ? { q } : undefined },
-    { method: "GET", url: "/company/list", params: q ? { q } : undefined },
-  ] as const;
-
-  for (const req of candidates) {
-    try {
-      const resp = await apiGateway({
-        method: req.method,
-        url: req.url,
-        params: req.params as any,
-      });
-      const data: any = (resp as any)?.data ?? resp ?? {};
-      const arr =
-        Array.isArray(data) ? data :
-        Array.isArray(data?.items) ? data.items :
-        Array.isArray(data?.companies) ? data.companies :
-        Array.isArray(data?.results) ? data.results :
-        [];
-
-      if (Array.isArray(arr)) return arr as CompanyDTO[];
-    } catch {
-    }
+  try {
+    const resp = await apiGateway({
+      method: "GET",
+      url: "/company",
+      params: { limit: 20, ...(q ? { q } : {}) },
+    });
+    const data: any = (resp as any)?.data ?? resp ?? {};
+    const arr =
+      Array.isArray(data) ? data :
+      Array.isArray(data?.items) ? data.items :
+      Array.isArray(data?.companies) ? data.companies :
+      [];
+    return Array.isArray(arr) ? (arr as CompanyDTO[]) : [];
+  } catch {
+    return [];
   }
-
-  return [];
 }
 
 export default function CompanyPicker({
