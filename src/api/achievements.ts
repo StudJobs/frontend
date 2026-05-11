@@ -115,16 +115,9 @@ export const AchievementsAPI = {
             method: "GET",
             url: `/user/achievements/${encodeURIComponent(id)}/download`,
           });
-          const dlData = unwrap(dlResp);
-
-          url =
-            dlData.download_url ??
-            dlData.url ??
-            dlData.direct_url ??
-            dlData.link ??
-            "";
+          url = unwrap(dlResp).url ?? "";
         } catch (e) {
-          console.warn("Не удалось получить download_url для достижения", id, e);
+          console.warn("Не удалось получить download URL для достижения", id, e);
         }
       }
 

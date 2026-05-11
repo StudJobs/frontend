@@ -11,6 +11,7 @@ import spiral from "../assets/images/spiral.png";
 import checkLong from "../assets/images/check-long.png";
 
 import { apiGateway } from "../api/apiGateway";
+import { ApplicationsAPI } from "../api/applications";
 
 import {
   VacanciesAPI,
@@ -268,39 +269,10 @@ async function fetchCompanyName(companyId: string): Promise<string | undefined> 
   return undefined;
 }
 
-async function respondToVacancy(vacancyId: string): Promise<void> {
+async function respondToVacancy(vacancyId: string, coverLetter?: string): Promise<void> {
   const id = String(vacancyId || "").trim();
   if (!id) throw new Error("Не найден ID вакансии");
-
-  const attempts: Array<{ url: string; data?: any }> = [
-    { url: `/vacancy/${id}/respond` },
-    { url: `/vacancy/${id}/response` },
-    { url: `/vacancy/${id}/apply` },
-    { url: `/vacancies/${id}/respond` },
-    { url: `/vacancies/${id}/apply` },
-    { url: `/vacancy/respond`, data: { vacancy_id: id } },
-    { url: `/vacancy/response`, data: { vacancy_id: id } },
-    { url: `/vacancy/apply`, data: { vacancy_id: id } },
-  ];
-
-  let lastErr: any = null;
-
-  for (const a of attempts) {
-    try {
-      await apiGateway({ method: "POST", url: a.url, data: a.data });
-      return;
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-
-  const msg =
-    typeof lastErr === "string"
-      ? lastErr
-      : lastErr?.message ||
-        lastErr?.detail ||
-        "Не удалось отправить отклик (нужен правильный endpoint на бэке)";
-  throw new Error(msg);
+  await ApplicationsAPI.apply(id, coverLetter);
 }
 
 export default function Vacancies() {
@@ -623,7 +595,16 @@ export default function Vacancies() {
     try {
       setResponding(true);
       setRespondMessage("");
-      await respondToVacancy(id);
+      const coverLetter = window.prompt(
+        "Сопроводительное письмо (необязательно). Оставьте пустым, чтобы отправить без него.",
+        ""
+      );
+      // null = «Отмена» → не отправляем отклик
+      if (coverLetter === null) {
+        setResponding(false);
+        return;
+      }
+      await respondToVacancy(id, coverLetter || undefined);
       setRespondMessage("Отклик отправлен ✅");
     } catch (e: any) {
       const msg =

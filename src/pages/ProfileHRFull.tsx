@@ -1695,6 +1695,22 @@ export default function ProfileHRFull() {
                     >
                       Удалить вакансию
                     </button>
+
+                    <a
+                      href={`/hr/applications?vacancy_id=${encodeURIComponent(String(selectedVacancy?.id ?? ""))}`}
+                      style={{
+                        background: "transparent",
+                        color: "#111",
+                        border: "1px solid rgba(0,0,0,.2)",
+                        borderRadius: 12,
+                        padding: "12px 18px",
+                        fontWeight: 800,
+                        textDecoration: "none",
+                      }}
+                      title="Посмотреть отклики на эту вакансию"
+                    >
+                      Отклики
+                    </a>
                   </div>
 
                   <button

@@ -366,6 +366,13 @@ export default function Profile() {
                 {resumeUploading ? "Загружаем..." : "Добавить резюме или достижение"}
               </button>
 
+              <button
+                className="profile-btn"
+                onClick={() => navigate("/my/applications")}
+              >
+                Мои отклики
+              </button>
+
               <button className="profile-btn logout-btn" onClick={handleLogout}>
                 Выйти из аккаунта
               </button>

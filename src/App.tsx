@@ -17,6 +17,8 @@ import HRTasks from "./pages/HRTasks";
 import Expert from "./pages/Expert";
 import PublicProfile from "./pages/PublicProfile";
 import HRDashboard from "./pages/HRDashboard";
+import MyApplications from "./pages/MyApplications";
+import HRApplications from "./pages/HRApplications";
 
 export default function App() {
   return (
@@ -147,6 +149,24 @@ export default function App() {
           element={
             <PrivateRoute>
               <PublicProfile />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/my/applications"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_STUDENT"]}>
+              <MyApplications />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/hr/applications"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER", "ROLE_COMPANY_OWNER"]}>
+              <HRApplications />
             </PrivateRoute>
           }
         />
