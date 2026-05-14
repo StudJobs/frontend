@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
@@ -27,6 +27,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
 
         <Route path="/auth" element={<AuthOrRegister />} />
+        {/* Старая ссылка /register раньше падала в 404 (B6). */}
+        <Route path="/register" element={<Navigate to="/auth?mode=register" replace />} />
 
         <Route
           path="/profile"
