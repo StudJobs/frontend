@@ -187,7 +187,7 @@
 
 .resume-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
@@ -197,6 +197,27 @@
   transition: border-color var(--duration-base) var(--ease);
 }
 .resume-row:hover { border-color: var(--border); }
+
+.resume-row-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: 1px solid rgba(233, 162, 59, 0.3);
+  white-space: nowrap;
+}
+.resume-row-type--empty {
+  background: transparent;
+  color: var(--ink-subtle);
+  border-color: var(--border);
+}
 
 .resume-link {
   font-family: var(--font-sans);
@@ -247,19 +268,23 @@
   gap: var(--space-3);
 }
 
-.profile-btn {
+/* Кнопки профиля.
+   Специфичность .profile-section .profile-btn (0,2,0) победит чужие .profile-btn
+   (0,1,0) из других mospolyjob-css, которые могут попасть в head через импорты
+   из других страниц (Vite dev накапливает все когда-либо импортированные CSS). */
+.profile-section .profile-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   padding: 10px 18px;
   font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: var(--tracking-wide);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--brand);
+  border: 1px solid var(--brand);
   border-radius: var(--radius-md);
-  color: var(--ink);
+  color: var(--ink-on-brand);
   cursor: pointer;
   text-decoration: none;
   transition:
@@ -267,22 +292,29 @@
     border-color var(--duration-base) var(--ease),
     background var(--duration-base) var(--ease);
 }
-.profile-btn:hover {
-  border-color: var(--border-strong);
+.profile-section .profile-btn:hover {
+  background: var(--brand-deep);
+  border-color: var(--brand-deep);
   transform: translateY(-1px);
 }
-.profile-btn:disabled {
+.profile-section .profile-btn:active { transform: translateY(0); }
+.profile-section .profile-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
-.profile-btn.logout-btn {
+
+/* Logout — danger-outline (transparent + 1px красная обводка). Раньше выглядел
+   как почти-белая кнопка из-за каскадного конфликта с hr-css. */
+.profile-section .profile-btn.logout-btn {
+  background: transparent;
+  border-color: var(--danger);
   color: var(--danger);
-  border-color: rgba(215, 98, 98, 0.3);
 }
-.profile-btn.logout-btn:hover {
+.profile-section .profile-btn.logout-btn:hover {
   background: var(--danger-soft);
   border-color: var(--danger);
+  color: var(--danger);
 }
 
 /* ── Error ─────────────────────────────────────────────────────────────── */

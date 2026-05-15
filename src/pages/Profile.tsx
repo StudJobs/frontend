@@ -9,7 +9,11 @@ import { apiGateway } from "../api/apiGateway";
 import AchievementsBlock, {
   AchievementsBlockHandle,
 } from "../components/profile/AchievementsBlock";
-import { AchievementsAPI, AchievementItem } from "../api/achievements";
+import {
+  AchievementsAPI,
+  AchievementItem,
+  achievementTypeLabel,
+} from "../api/achievements";
 import SkillBadges from "../components/ui/SkillBadges";
 import Onboarding from "../components/profile/Onboarding";
 
@@ -24,6 +28,7 @@ type UserProfile = {
   profession_category?: string;
   specialization?: string;
   education_institution?: string;
+  github?: string;
   skill_slugs?: string[];
 };
 
@@ -284,6 +289,24 @@ export default function Profile() {
                         "не указан"
                       )}
                     </li>
+                    <li>
+                      GitHub:{" "}
+                      {p.github ? (
+                        <a
+                          href={
+                            /^https?:\/\//i.test(p.github)
+                              ? p.github
+                              : `https://github.com/${p.github.replace(/^@/, "")}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {p.github}
+                        </a>
+                      ) : (
+                        "не указан"
+                      )}
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -321,6 +344,16 @@ export default function Profile() {
                           >
                             {niceName(it)}
                           </a>
+
+                          {typeof it.type === "number" && it.type > 0 ? (
+                            <span className="resume-row-type">
+                              {achievementTypeLabel(it.type)}
+                            </span>
+                          ) : (
+                            <span className="resume-row-type resume-row-type--empty">
+                              Без типа
+                            </span>
+                          )}
 
                           <button
                             type="button"

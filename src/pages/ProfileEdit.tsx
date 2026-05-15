@@ -45,6 +45,7 @@ export default function ProfileEdit() {
     telegram: "",
     profile: "",
     educationInstitution: "",
+    github: "",
     description: "",
   });
 
@@ -67,6 +68,7 @@ export default function ProfileEdit() {
           telegram: data.telegram ?? data.tg ?? "",
           profile: data.profession_category ?? data.specialization ?? "",
           educationInstitution: data.education_institution ?? "",
+          github: data.github ?? "",
           description: data.description ?? "",
         }));
 
@@ -221,6 +223,7 @@ export default function ProfileEdit() {
         telegram: normalizeTelegram(formData.telegram),
         profession_category: formData.profile || undefined,
         education_institution: formData.educationInstitution.trim() || undefined,
+        github: formData.github.trim() || undefined,
         description: formData.description || undefined,
         skill_slugs: skillSlugs.length ? skillSlugs : undefined,
       };
@@ -374,6 +377,16 @@ export default function ProfileEdit() {
                 value={formData.telegram}
                 onChange={handleChange}
                 placeholder="@username"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="label-title">GitHub</label>
+              <input
+                name="github"
+                value={formData.github}
+                onChange={handleChange}
+                placeholder="https://github.com/yourname"
               />
             </div>
           </div>

@@ -10,7 +10,11 @@ type Props = {
 export default function SkillBadges({
   slugs,
   emptyText = "Навыки не указаны",
-  variant = "default",
+  // По умолчанию — neutral: пользователь сам себе ставит навыки, без эксперт-
+  // верификации они не должны визуально выглядеть как «подтверждённые». Под
+  // verified-стиль (lime) переключаемся только когда явно знаем что навык
+  // подтверждён (есть утверждённые ачивки по нему).
+  variant = "neutral",
 }: Props) {
   const [resolved, setResolved] = useState<Record<string, Skill>>({});
 
