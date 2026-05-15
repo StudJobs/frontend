@@ -16,6 +16,7 @@ export default function SkillsInput({
 }: Props) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Skill[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [open, setOpen] = useState(false);
   const [resolved, setResolved] = useState<Record<string, Skill>>({});
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -45,6 +46,7 @@ export default function SkillsInput({
   useEffect(() => {
     let cancelled = false;
     const trimmed = query.trim();
+    setLoadingSuggestions(true);
     const timer = window.setTimeout(async () => {
       try {
         const items = trimmed
@@ -53,13 +55,15 @@ export default function SkillsInput({
         if (!cancelled) setSuggestions(items);
       } catch {
         if (!cancelled) setSuggestions([]);
+      } finally {
+        if (!cancelled) setLoadingSuggestions(false);
       }
     }, trimmed ? 220 : 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query, open]);
+  }, [query]);
 
   useEffect(() => {
     if (!open) return;
@@ -83,6 +87,10 @@ export default function SkillsInput({
     }
     onChange([...value, slug]);
     setQuery("");
+    // Возвращаем фокус в input — пользователь может сразу выбрать ещё навык.
+    // Без этого click-out по mousedown теряет фокус и закрывает dropdown.
+    inputRef.current?.focus();
+    setOpen(true);
   };
 
   const removeSlug = (slug: string) => {
@@ -134,21 +142,31 @@ export default function SkillsInput({
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
       />
-      {open && visibleSuggestions.length > 0 ? (
+      {open ? (
         <div className="skills-input-dropdown">
-          {visibleSuggestions.map((s) => (
-            <div
-              key={s.slug}
-              className="skills-input-option"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                addSlug(s.slug, s);
-              }}
-            >
-              <span>{s.name}</span>
-              <span className="skills-input-option-slug">{s.slug}</span>
+          {visibleSuggestions.length > 0 ? (
+            visibleSuggestions.map((s) => (
+              <div
+                key={s.slug}
+                className="skills-input-option"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  addSlug(s.slug, s);
+                }}
+              >
+                <span>{s.name}</span>
+                <span className="skills-input-option-slug">{s.slug}</span>
+              </div>
+            ))
+          ) : (
+            <div className="skills-input-option skills-input-option--placeholder">
+              {loadingSuggestions
+                ? "Загружаем подсказки…"
+                : query.trim()
+                ? "Ничего не нашли. Уточни запрос."
+                : "Нет доступных навыков."}
             </div>
-          ))}
+          )}
         </div>
       ) : null}
     </div>

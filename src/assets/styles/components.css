@@ -555,6 +555,17 @@
 .skills-input-option:hover {
   background: var(--surface-elev);
 }
+
+.skills-input-option--placeholder {
+  cursor: default;
+  color: var(--ink-subtle);
+  font-style: italic;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+}
+.skills-input-option--placeholder:hover {
+  background: transparent;
+}
 .skills-input-option-slug {
   font-family: var(--font-mono);
   font-size: 11px;
