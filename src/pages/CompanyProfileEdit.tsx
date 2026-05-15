@@ -18,6 +18,8 @@ type CompanyProfile = {
   site?: string;
   description?: string;
   type?: CompanyType;
+  cleanup_vacancies_after_days?: number;
+  cleanup_tasks_after_days?: number;
 };
 
 type LocalStoredFile = {
@@ -135,6 +137,14 @@ export default function CompanyProfileEdit() {
       site: data?.site || "",
       description: data?.description || "",
       type: data?.type?.value ? { value: data.type.value } : { value: "" },
+      cleanup_vacancies_after_days:
+        typeof data?.cleanup_vacancies_after_days === "number"
+          ? data.cleanup_vacancies_after_days
+          : 0,
+      cleanup_tasks_after_days:
+        typeof data?.cleanup_tasks_after_days === "number"
+          ? data.cleanup_tasks_after_days
+          : 0,
     });
 
     if (id) syncFromLocal(id);
@@ -307,6 +317,10 @@ export default function CompanyProfileEdit() {
           site: company.site || "",
           description: company.description || "",
           type: { value: company.type?.value || "" },
+          cleanup_vacancies_after_days:
+            Number(company.cleanup_vacancies_after_days) || 0,
+          cleanup_tasks_after_days:
+            Number(company.cleanup_tasks_after_days) || 0,
         },
       });
 
@@ -405,6 +419,62 @@ export default function CompanyProfileEdit() {
                 setCompany((p) => ({ ...p, description: e.target.value }))
               }
             />
+          </div>
+
+          <h3 className="subsection-title">Авточистка</h3>
+          <p
+            style={{
+              fontSize: 13,
+              opacity: 0.65,
+              margin: "0 0 12px",
+              maxWidth: 720,
+            }}
+          >
+            Каждые 6 часов Gateway помечает удалёнными закрытые вакансии и
+            завершённые микрозадачи старше указанных значений. 0 = не чистить.
+            Помогает держать ленту чистой без ручного удаления.
+          </p>
+          <div className="form-row">
+            <div className="form-field">
+              <label className="label-title">
+                Удалять закрытые вакансии через N дней
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={365}
+                value={String(company.cleanup_vacancies_after_days ?? 0)}
+                onChange={(e) =>
+                  setCompany((p) => ({
+                    ...p,
+                    cleanup_vacancies_after_days: Math.max(
+                      0,
+                      Number(e.target.value) || 0,
+                    ),
+                  }))
+                }
+              />
+            </div>
+            <div className="form-field">
+              <label className="label-title">
+                Удалять завершённые микрозадачи через N дней
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={365}
+                value={String(company.cleanup_tasks_after_days ?? 0)}
+                onChange={(e) =>
+                  setCompany((p) => ({
+                    ...p,
+                    cleanup_tasks_after_days: Math.max(
+                      0,
+                      Number(e.target.value) || 0,
+                    ),
+                  }))
+                }
+              />
+            </div>
           </div>
 
           <div className="form-field" style={{ marginTop: 12 }}>
