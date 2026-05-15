@@ -44,7 +44,7 @@ test.describe.serial("Сценарий 5 — Microtask end-to-end (auto-achievem
           description: "Make e2e flow green",
           reward: 5000,
           deadline,
-          skill_slugs: ["golang"],
+          skill_slugs: ["go"],
         },
       },
       "create task",

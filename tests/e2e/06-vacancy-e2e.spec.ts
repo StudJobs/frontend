@@ -20,7 +20,7 @@ test.describe.serial("Сценарий 6 — Vacancy end-to-end", () => {
   let vacancyId = "";
   let applicationId = "";
   const vacancyTitle = `E2E Senior Go ${Date.now()}`;
-  const skillSlug = "golang";
+  const skillSlug = "go";
 
   test("COMPANY_OWNER регистрируется (auto-company)", async ({ request }) => {
     ownerSess = await registerViaAPI(request, "ROLE_COMPANY_OWNER");
@@ -34,7 +34,7 @@ test.describe.serial("Сценарий 6 — Vacancy end-to-end", () => {
     expect(me.ok()).toBeTruthy();
   });
 
-  test("Owner создаёт вакансию с тегом golang", async ({ request }) => {
+  test("Owner создаёт вакансию с тегом go", async ({ request }) => {
     test.skip(!ownerSess, "no owner");
     const res = await apiCall(
       request,
