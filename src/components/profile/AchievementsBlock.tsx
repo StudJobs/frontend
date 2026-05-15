@@ -185,63 +185,91 @@ const AchievementsBlock = forwardRef<
                 status === VERIFICATION_STATUS.REJECTED ||
                 status === undefined);
 
+            // Имя для отображения:
+            //   - microtask-ачивка (file_type=external/url): name = заголовок
+            //     задачи, file_name = URL → показываем `name`.
+            //   - обычная файл-ачивка: file_name = оригинальное имя файла
+            //     (`course.docx`), name = internal id → показываем `file_name`.
+            // Расширение выводим отдельным mono-цветом справа.
+            const isExternalURL = a.file_type === "external/url";
+            const displayBase = (
+              isExternalURL
+                ? a.name || a.file_name
+                : a.file_name || a.name || "Файл"
+            ).trim();
+            const lastDot = displayBase.lastIndexOf(".");
+            const baseName =
+              lastDot > 0 ? displayBase.slice(0, lastDot) : displayBase;
+            const ext =
+              lastDot > 0 ? displayBase.slice(lastDot + 1).toLowerCase() : "";
+
             return (
               <li key={a.id} className="achievement-item">
-                <a
-                  href={a.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="achievement-link"
-                >
-                  {a.name || a.file_name}
-                </a>
+                <div className="achievement-item__icon" aria-hidden="true">
+                  {ext ? ext.slice(0, 3).toUpperCase() : "DOC"}
+                </div>
 
-                {typeof a.type === "number" && a.type > 0 && (
-                  <span className="type-badge">
-                    {achievementTypeLabel(a.type)}
-                  </span>
-                )}
-
-                {typeof status === "number" && status > 0 && (
-                  <span
-                    className={verificationBadgeClass(status)}
-                    title={a.review_comment || ""}
+                <div className="achievement-item__main">
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="achievement-item__title"
+                    title={displayBase}
                   >
-                    {verificationStatusLabel(status)}
-                  </span>
-                )}
+                    <span className="achievement-item__name">{baseName}</span>
+                    {ext ? (
+                      <span className="achievement-item__ext">.{ext}</span>
+                    ) : null}
+                  </a>
 
-                {canSubmit ? (
+                  <div className="achievement-item__meta">
+                    {typeof a.type === "number" && a.type > 0 ? (
+                      <span className="type-badge">
+                        {achievementTypeLabel(a.type)}
+                      </span>
+                    ) : (
+                      <span className="type-badge type-badge--empty">
+                        Без типа
+                      </span>
+                    )}
+
+                    {typeof status === "number" && status > 0 && (
+                      <span
+                        className={verificationBadgeClass(status)}
+                        title={a.review_comment || ""}
+                      >
+                        {verificationStatusLabel(status)}
+                      </span>
+                    )}
+                  </div>
+
+                  {status === VERIFICATION_STATUS.REJECTED && a.review_comment ? (
+                    <div className="review-comment">
+                      Комментарий эксперта: {a.review_comment}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="achievement-item__actions">
+                  {canSubmit ? (
+                    <button
+                      type="button"
+                      className="achievement-submit-btn"
+                      onClick={() => handleSubmitForReview(a.numeric_id)}
+                    >
+                      На проверку
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    className="mj-vac-btn mj-vac-btn--ghost"
-                    style={{
-                      marginLeft: 8,
-                      height: 28,
-                      padding: "0 10px",
-                      fontSize: 12,
-                      width: "auto",
-                    }}
-                    onClick={() => handleSubmitForReview(a.numeric_id)}
+                    className="achievement-delete-btn"
+                    onClick={() => handleDelete(a.id)}
+                    aria-label="Удалить достижение"
                   >
-                    На проверку
+                    ✕
                   </button>
-                ) : null}
-
-                {status === VERIFICATION_STATUS.REJECTED && a.review_comment ? (
-                  <div className="review-comment">
-                    Комментарий эксперта: {a.review_comment}
-                  </div>
-                ) : null}
-
-                <button
-                  type="button"
-                  className="achievement-delete-btn"
-                  onClick={() => handleDelete(a.id)}
-                  aria-label="Удалить достижение"
-                >
-                  ✕
-                </button>
+                </div>
               </li>
             );
           })}

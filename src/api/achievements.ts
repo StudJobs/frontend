@@ -5,6 +5,7 @@ export type AchievementItem = {
   numeric_id?: number; // числовой ID из БД (нужен для submit/review)
   name: string;
   file_name: string;
+  file_type?: string;  // например "image/png", "application/pdf", "external/url" (F5)
   url: string;
   type?: number;
   verification_status?: number;
@@ -126,6 +127,7 @@ export const AchievementsAPI = {
         numeric_id: numericId,
         name,
         file_name: fileName,
+        file_type: fileType || undefined,
         url,
         type: typeof item.type === "number" ? item.type : undefined,
         verification_status:
