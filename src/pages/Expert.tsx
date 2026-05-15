@@ -126,17 +126,10 @@ export default function Expert() {
           {items.map((a) => {
             const id = a.numeric_id ?? 0;
             const draft = drafts[id] ?? { decision: 3 as 3, comment: "" };
+            const fileExt = (a.file_name || "").split(".").pop()?.toLowerCase() || "";
+            const isImage = ["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"].includes(fileExt);
             return (
-              <article
-                key={id || a.id}
-                style={{
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-lg)",
-                  padding: 20,
-                  background: "var(--surface)",
-                  color: "var(--fg)",
-                }}
-              >
+              <article key={id || a.id} className="expert-review-card">
                 <div
                   style={{
                     display: "flex",
@@ -145,8 +138,8 @@ export default function Expert() {
                     gap: 10,
                   }}
                 >
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 18 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: 18, fontFamily: "var(--font-display)" }}>
                       {a.name || a.file_name}
                     </div>
                     <div style={{ opacity: 0.75, fontSize: 13, marginTop: 4 }}>
@@ -158,6 +151,54 @@ export default function Expert() {
                     </div>
                   </div>
                 </div>
+
+                {a.url ? (
+                  <div className="expert-review-card__preview">
+                    {isImage ? (
+                      <a href={a.url} target="_blank" rel="noopener noreferrer">
+                        <img src={a.url} alt={a.file_name} />
+                      </a>
+                    ) : null}
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="expert-review-card__file-link"
+                    >
+                      Открыть файл ↗
+                    </a>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 8, fontSize: 13, color: "var(--danger)" }}>
+                    Не удалось получить URL файла. Проверьте позже.
+                  </div>
+                )}
+
+                {(a.external_url || a.description) ? (
+                  <div className="expert-review-card__extras">
+                    {a.external_url ? (
+                      <>
+                        <div className="expert-review-card__extras-title">Ссылка от студента</div>
+                        <a
+                          href={a.external_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="expert-review-card__extras-link"
+                        >
+                          {a.external_url} ↗
+                        </a>
+                      </>
+                    ) : null}
+                    {a.description ? (
+                      <>
+                        <div className="expert-review-card__extras-title" style={{ marginTop: a.external_url ? 10 : 0 }}>
+                          Описание / контекст
+                        </div>
+                        <div className="expert-review-card__extras-text">{a.description}</div>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <label style={{ fontWeight: 700 }}>

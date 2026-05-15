@@ -12,6 +12,8 @@ export type AchievementItem = {
   reviewed_by?: string;
   reviewed_at?: string;
   review_comment?: string;
+  external_url?: string;
+  description?: string;
   user_uuid?: string;
   created_at?: string;
 };
@@ -137,6 +139,8 @@ export const AchievementsAPI = {
         reviewed_by: item.reviewed_by ?? undefined,
         reviewed_at: item.reviewed_at ?? undefined,
         review_comment: item.review_comment ?? undefined,
+        external_url: item.external_url ?? undefined,
+        description: item.description ?? undefined,
         user_uuid: item.user_uuid ?? undefined,
         created_at: item.created_at ?? undefined,
       });
@@ -152,7 +156,13 @@ export const AchievementsAPI = {
     });
   },
 
-  async upload(file: File, displayName?: string, type: number = 0) {
+  async upload(
+    file: File,
+    displayName?: string,
+    type: number = 0,
+    externalURL?: string,
+    description?: string
+  ) {
     const name = displayName || file.name;
 
     const metaResp = await apiGateway({
@@ -164,6 +174,8 @@ export const AchievementsAPI = {
         file_type: file.type || "application/octet-stream",
         name,
         type,
+        external_url: externalURL || undefined,
+        description: description || undefined,
       },
     });
 
@@ -230,6 +242,8 @@ export const AchievementsAPI = {
         file_type: file.type || "application/octet-stream",
         file_size: file.size,
         type,
+        external_url: externalURL || undefined,
+        description: description || undefined,
       },
     });
 

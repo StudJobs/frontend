@@ -33,9 +33,12 @@ export const ExpertAPI = {
         numeric_id: numericId,
         name,
         file_name: fileName,
-        url: "",
+        file_type: item.file_type ?? undefined,
+        url: String(item.url ?? ""),
         type: typeof item.type === "number" ? item.type : undefined,
         verification_status: VERIFICATION_STATUS.PENDING,
+        external_url: item.external_url ?? undefined,
+        description: item.description ?? undefined,
         user_uuid: item.user_uuid,
         created_at: item.created_at,
       });

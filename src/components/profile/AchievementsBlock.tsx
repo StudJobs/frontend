@@ -49,6 +49,8 @@ const AchievementsBlock = forwardRef<
   const [selectedType, setSelectedType] = useState<number>(0);
   // null = «все типы» (без фильтра). Иначе — type для items.filter.
   const [filterType, setFilterType] = useState<number | null>(null);
+  const [externalURL, setExternalURL] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
   const toast = useToast();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -93,8 +95,17 @@ const AchievementsBlock = forwardRef<
     try {
       setLoading(true);
       setError("");
-      await AchievementsAPI.upload(file, file.name, selectedType);
+      await AchievementsAPI.upload(
+        file,
+        file.name,
+        selectedType,
+        externalURL.trim() || undefined,
+        description.trim() || undefined,
+      );
       await loadAchievements();
+      // Очищаем доп-поля, чтобы следующий upload не унаследовал чужой контекст.
+      setExternalURL("");
+      setDescription("");
       toast.success(
         "Достижение загружено",
         `«${file.name}» — теперь отправь его эксперту на верификацию.`
@@ -208,6 +219,35 @@ const AchievementsBlock = forwardRef<
           </select>
         </div>
       </div>
+
+      {/* Опциональные поля для эксперта: ссылка на репо/демо + описание контекста. */}
+      <details className="achievement-extras">
+        <summary>+ Ссылка и описание (опционально)</summary>
+        <div className="achievement-extras__body">
+          <label className="achievement-extras__field">
+            <span>Ссылка (репозиторий / демо / презентация)</span>
+            <input
+              type="url"
+              placeholder="https://github.com/me/project"
+              value={externalURL}
+              onChange={(e) => setExternalURL(e.target.value)}
+            />
+          </label>
+          <label className="achievement-extras__field">
+            <span>Описание / контекст работы</span>
+            <textarea
+              rows={3}
+              maxLength={1024}
+              placeholder="Что было сделано, ваша роль, технологии — это увидит эксперт"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+          <p className="achievement-extras__hint">
+            Поля прикрепятся ко всем достижениям, загруженным до следующей очистки. Очистка — после успешного upload.
+          </p>
+        </div>
+      </details>
 
       {loading && <p style={{ color: "var(--fg-muted)", fontSize: 13 }}>Загружаем достижения...</p>}
       {error && <p className="profile-error">{error}</p>}
