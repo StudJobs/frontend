@@ -64,6 +64,21 @@ const SCHEDULE_OPTIONS = [
 ];
 
 const DEFAULT_LIMIT = 9;
+const PAGE_SIZE_OPTIONS = [9, 15, 25, 50];
+
+// Windowed pager: «1 ... 4 5 6 ... 12». До 7 страниц показываем все номера.
+function buildPageList(current: number, total: number): (number | "…")[] {
+  if (total <= 1) return [1];
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const items: (number | "…")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) items.push("…");
+  for (let i = start; i <= end; i++) items.push(i);
+  if (end < total - 1) items.push("…");
+  items.push(total);
+  return items;
+}
 
 const SALARY_MIN = 0;
 const SALARY_MAX = 300000;
@@ -276,6 +291,8 @@ async function respondToVacancy(vacancyId: string, coverLetter?: string): Promis
 }
 
 export default function Vacancies() {
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_LIMIT);
+  const [pageJump, setPageJump] = useState<string>("");
   const [filters, setFilters] = useState<VacancyListParams>({
     page: 1,
     limit: DEFAULT_LIMIT,
@@ -388,11 +405,14 @@ export default function Vacancies() {
   const total = pagination.total;
 
   const applyFilters = async (next?: Partial<VacancyListParams>) => {
+    // Если next.limit передан явно (смена pageSize), уважаем его поверх state'а:
+    // setPageSize асинхронен и в этом же тике ещё не виден через `pageSize`.
+    const effectiveLimit = (next?.limit as number | undefined) ?? pageSize;
     const merged: VacancyListParams = {
       ...filters,
       ...(next || {}),
       position_status: "open",
-      limit: DEFAULT_LIMIT,
+      limit: effectiveLimit,
     };
 
     let minS = numOrUndef(salaryFrom);
@@ -409,7 +429,7 @@ export default function Vacancies() {
 
     const params: VacancyListParams = {
       page: Math.max(1, Number((merged as any).page || 1)),
-      limit: DEFAULT_LIMIT,
+      limit: effectiveLimit,
       position_status: "open",
 
       company_id: (merged.company_id as any)?.trim?.() || undefined,
@@ -516,7 +536,7 @@ export default function Vacancies() {
   const reset = () => {
     const base: VacancyListParams = {
       page: 1,
-      limit: DEFAULT_LIMIT,
+      limit: pageSize,
       position_status: "open",
       company_id: "",
       work_format: "",
@@ -844,32 +864,130 @@ export default function Vacancies() {
         </div>
 
         <div className="mj-vac-meta">
-          <div>
-            {typeof total === "number"
-              ? `Найдено: ${total}`
-              : `Страница: ${currentPage}${
-                  typeof pages === "number" ? ` / ${pages}` : ""
-                }`}
+          <div className="mj-vac-meta-left">
+            <span className="mj-vac-found">
+              {typeof total === "number" ? `Найдено: ${total}` : "Найдено: —"}
+            </span>
+            <span className="mj-vac-meta-sep">·</span>
+            <span className="mj-vac-page-info">
+              Страница <strong>{currentPage}</strong>
+              {typeof pages === "number" ? <> из <strong>{pages}</strong></> : null}
+            </span>
+            <span className="mj-vac-meta-sep">·</span>
+            <label className="mj-vac-pagesize">
+              <span>Показывать по</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const next = Number(e.target.value) || DEFAULT_LIMIT;
+                  setPageSize(next);
+                  applyFilters({ page: 1, limit: next });
+                }}
+                disabled={loading}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="mj-vac-pagination">
             <button
-              onClick={() =>
-                applyFilters({ page: Math.max(1, currentPage - 1) })
-              }
+              type="button"
+              onClick={() => applyFilters({ page: 1 })}
               disabled={loading || currentPage <= 1}
+              title="Первая страница"
+              aria-label="Первая страница"
             >
-              Назад
+              «
             </button>
             <button
+              type="button"
+              onClick={() => applyFilters({ page: Math.max(1, currentPage - 1) })}
+              disabled={loading || currentPage <= 1}
+              title="Предыдущая страница"
+              aria-label="Предыдущая страница"
+            >
+              ‹
+            </button>
+
+            {typeof pages === "number"
+              ? buildPageList(currentPage, pages).map((p, i) =>
+                  p === "…" ? (
+                    <span key={`gap-${i}`} className="mj-vac-page-ellipsis">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => applyFilters({ page: p })}
+                      disabled={loading || p === currentPage}
+                      className={p === currentPage ? "is-current" : ""}
+                      aria-current={p === currentPage ? "page" : undefined}
+                    >
+                      {p}
+                    </button>
+                  )
+                )
+              : null}
+
+            <button
+              type="button"
               onClick={() => applyFilters({ page: currentPage + 1 })}
               disabled={
                 loading ||
                 (typeof pages === "number" ? currentPage >= pages : false)
               }
+              title="Следующая страница"
+              aria-label="Следующая страница"
             >
-              Вперёд
+              ›
             </button>
+            <button
+              type="button"
+              onClick={() => applyFilters({ page: pages as number })}
+              disabled={
+                loading ||
+                typeof pages !== "number" ||
+                currentPage >= (pages as number)
+              }
+              title="Последняя страница"
+              aria-label="Последняя страница"
+            >
+              »
+            </button>
+
+            {typeof pages === "number" && pages > 7 ? (
+              <form
+                className="mj-vac-page-jump"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const n = Math.min(
+                    Math.max(1, Number(pageJump) || 1),
+                    pages as number
+                  );
+                  setPageJump("");
+                  applyFilters({ page: n });
+                }}
+              >
+                <input
+                  type="number"
+                  min={1}
+                  max={pages}
+                  placeholder="№"
+                  value={pageJump}
+                  onChange={(e) => setPageJump(e.target.value)}
+                  aria-label="Перейти к странице"
+                />
+                <button type="submit" disabled={loading || !pageJump}>
+                  ↵
+                </button>
+              </form>
+            ) : null}
           </div>
         </div>
 
