@@ -68,7 +68,17 @@ export default function SkillsInput({
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      // contains() недостаточно: React успевает rerender'нуть на addSlug
+      // (через родительский onChange) ДО того, как window-listener увидит
+      // событие. Кликнутая опция к этому моменту уже размонтирована и
+      // contains() возвращает false. Дополнительно проверяем className —
+      // он сохраняется на detached-узле.
+      if (wrapRef.current?.contains(target)) return;
+      const cl = target.classList;
+      if (cl?.contains("skills-input-option") || cl?.contains("skills-input-option-slug")) return;
+      setOpen(false);
     };
     window.addEventListener("mousedown", onDoc);
     return () => window.removeEventListener("mousedown", onDoc);
@@ -87,8 +97,6 @@ export default function SkillsInput({
     }
     onChange([...value, slug]);
     setQuery("");
-    // Возвращаем фокус в input — пользователь может сразу выбрать ещё навык.
-    // Без этого click-out по mousedown теряет фокус и закрывает dropdown.
     inputRef.current?.focus();
     setOpen(true);
   };
