@@ -9,11 +9,7 @@ import { apiGateway } from "../api/apiGateway";
 import AchievementsBlock, {
   AchievementsBlockHandle,
 } from "../components/profile/AchievementsBlock";
-import {
-  AchievementsAPI,
-  AchievementItem,
-  achievementTypeLabel,
-} from "../api/achievements";
+import { AchievementsAPI, AchievementItem } from "../api/achievements";
 import SkillBadges from "../components/ui/SkillBadges";
 import Onboarding from "../components/profile/Onboarding";
 
@@ -34,49 +30,7 @@ type UserProfile = {
 
 const unwrap = (resp: any) => resp?.data ?? resp;
 
-// Если VITE_API_URL не задан в .env — fallback на относительный /api/v1, иначе
-// fetch уйдёт мимо vite-proxy (на /users/...) и сервер dev-режима вернёт 404.
-const API_BASE =
-  ((import.meta as any).env?.VITE_API_URL || "/api/v1").replace(/\/+$/, "");
-
 const AVATAR_PREFIX = "user_avatar_";
-const RESUME_PREFIX = "user_resume_";
-
-const isImageExt = (s: string) => {
-  const v = (s || "").toLowerCase();
-  return (
-    v.endsWith(".png") ||
-    v.endsWith(".jpg") ||
-    v.endsWith(".jpeg") ||
-    v.endsWith(".webp") ||
-    v.endsWith(".gif") ||
-    v.endsWith(".svg") ||
-    v.endsWith(".bmp") ||
-    v.endsWith(".ico")
-  );
-};
-
-const isImageFile = (it: AchievementItem) => {
-  const fileName = (it.file_name || it.name || "").toLowerCase();
-  if (isImageExt(fileName)) return true;
-
-  const url = (it.url || "").toLowerCase();
-  return (
-    url.includes(".png") ||
-    url.includes(".jpg") ||
-    url.includes(".jpeg") ||
-    url.includes(".webp") ||
-    url.includes(".gif") ||
-    url.includes(".svg") ||
-    url.includes(".bmp") ||
-    url.includes(".ico")
-  );
-};
-
-const niceName = (it: AchievementItem) => {
-  const raw = it.file_name || it.name || "Файл";
-  return raw.replace(AVATAR_PREFIX, "").replace(RESUME_PREFIX, "");
-};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -85,13 +39,6 @@ export default function Profile() {
   const [error, setError] = useState<string>("");
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  const [docs, setDocs] = useState<AchievementItem[]>([]);
-
-  const [resumeUploading, setResumeUploading] = useState(false);
-  const [resumeError, setResumeError] = useState<string>("");
-
-  const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const achievementsRef = useRef<AchievementsBlockHandle | null>(null);
 
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -141,18 +88,13 @@ export default function Profile() {
     );
   };
 
-  const loadFilesFromAchievements = async () => {
+  const loadAvatar = async () => {
     try {
       const list: AchievementItem[] = await AchievementsAPI.list();
-
       const avatarItem = list.find(isAvatar);
       setAvatarUrl(avatarItem?.url || null);
-
-      const nonImages = list.filter((it) => !isAvatar(it) && !isImageFile(it));
-
-      setDocs(nonImages);
     } catch (e) {
-      console.error("Ошибка загрузки файлов из achievements:", e);
+      console.error("Ошибка загрузки аватара:", e);
     }
   };
 
@@ -163,62 +105,18 @@ export default function Profile() {
       return;
     }
     loadProfile();
-    loadFilesFromAchievements();
+    loadAvatar();
   }, [navigate]);
 
   const p = profile || {};
   const fullName = [p.last_name, p.first_name].filter(Boolean).join(" ");
   const hasDescription = !!p.description && p.description.trim().length > 0;
 
-  const handleResumeButtonClick = () => {
-    resumeInputRef.current?.click();
-  };
-
-  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setResumeUploading(true);
-      setResumeError("");
-
-      const fd = new FormData();
-      fd.append("resume", file);
-
-      const token = localStorage.getItem("token") || "";
-
-      const resp = await fetch(`${API_BASE}/users/files/resume`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: fd,
-      });
-
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => "");
-        console.error("Upload resume HTTP error:", resp.status, text);
-        setResumeError("Не удалось загрузить резюме.");
-        return;
-      }
-
-      await loadFilesFromAchievements();
-    } catch (err) {
-      console.error("Ошибка загрузки резюме:", err);
-      setResumeError("Не удалось загрузить резюме. Попробуйте позже.");
-    } finally {
-      setResumeUploading(false);
-      if (resumeInputRef.current) resumeInputRef.current.value = "";
-    }
-  };
-
-  const handleDocDelete = async (id: string) => {
-    try {
-      setResumeError("");
-      await AchievementsAPI.remove(id);
-      await loadFilesFromAchievements();
-    } catch (err) {
-      console.error("Ошибка удаления файла (achievement):", err);
-      setResumeError("Не удалось удалить файл. Попробуйте позже.");
-    }
+  const handleAddAchievementClick = () => {
+    // Делегируем загрузку в AchievementsBlock: там выбирается тип через dropdown,
+    // файл сохраняется через /user/achievements с типом, появляется кнопка
+    // «На проверку». Отдельный resume-flow (без типа) больше не используется.
+    achievementsRef.current?.openFileDialog();
   };
 
   const tgRaw = (p.telegram || p.tg || "").trim();
@@ -329,58 +227,6 @@ export default function Profile() {
 
               <div className="profile-achievements">
                 <h2>Список достижений и резюме:</h2>
-
-                <div className="profile-resume-block">
-
-                  {docs.length ? (
-                    <div className="resume-list">
-                      {docs.map((it) => (
-                        <div className="resume-row" key={it.id}>
-                          <a
-                            href={it.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="resume-link"
-                          >
-                            {niceName(it)}
-                          </a>
-
-                          {typeof it.type === "number" && it.type > 0 ? (
-                            <span className="resume-row-type">
-                              {achievementTypeLabel(it.type)}
-                            </span>
-                          ) : (
-                            <span className="resume-row-type resume-row-type--empty">
-                              Без типа
-                            </span>
-                          )}
-
-                          <button
-                            type="button"
-                            className="resume-delete-btn"
-                            onClick={() => handleDocDelete(it.id)}
-                            aria-label="Удалить файл"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>Файлов пока нет.</p>
-                  )}
-
-                  <input
-                    ref={resumeInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,application/pdf"
-                    style={{ display: "none" }}
-                    onChange={handleResumeChange}
-                  />
-
-                  {resumeError && <p className="profile-error">{resumeError}</p>}
-                </div>
-
                 <AchievementsBlock ref={achievementsRef} />
               </div>
             </div>
@@ -395,10 +241,9 @@ export default function Profile() {
 
               <button
                 className="profile-btn"
-                onClick={handleResumeButtonClick}
-                disabled={resumeUploading}
+                onClick={handleAddAchievementClick}
               >
-                {resumeUploading ? "Загружаем..." : "Добавить резюме или достижение"}
+                Добавить достижение
               </button>
 
               <button
