@@ -174,8 +174,12 @@ const AchievementsBlock = forwardRef<
             type="button"
             className="achievement-toolbar__upload-btn"
             onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-            title="Выбрать файл"
+            disabled={loading || selectedType === 0}
+            title={
+              selectedType === 0
+                ? "Сначала выберите тип достижения"
+                : "Выбрать файл"
+            }
           >
             + Файл
           </button>
@@ -193,7 +197,10 @@ const AchievementsBlock = forwardRef<
             }
           >
             <option value="">Все типы</option>
-            {ACHIEVEMENT_TYPES.map((t) => (
+            {/* В фильтре «Без типа» (value=0) исключаем — есть отдельный
+                «Иное» для категории, плюс «Без типа» останется только как
+                переходное состояние при загрузке (и заблокирует кнопку). */}
+            {ACHIEVEMENT_TYPES.filter((t) => t.value > 0).map((t) => (
               <option key={t.value} value={t.value}>
                 {t.label}
               </option>
