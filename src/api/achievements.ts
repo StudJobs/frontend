@@ -171,11 +171,15 @@ export const AchievementsAPI = {
     const meta = (root as any).meta ?? root;
     const uploadInfo = (root as any).upload_url ?? (root as any).uploadUrl ?? {};
 
+    // Используем || (truthy), а не ?? (nullish): proto-int64 для не сохранённой
+    // в БД меты возвращает meta.id = 0 — это «отсутствует», но nullish-coalesce
+    // его не пропускает. Confirm-URL должен использовать name (acivement name),
+    // не «0», иначе бэк ловит коллизию AlreadyExists на чужих записях.
     const id: string = String(
-      (meta as any).id ??
-        (meta as any).name ??
-        (meta as any).file_name ??
-        (meta as any).fileName ??
+      (meta as any).id ||
+        (meta as any).name ||
+        (meta as any).file_name ||
+        (meta as any).fileName ||
         name
     );
 

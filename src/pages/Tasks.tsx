@@ -21,6 +21,20 @@ import {
 import { useToast } from "../components/ui/Toast";
 
 const DEFAULT_LIMIT = 9;
+const PAGE_SIZE_OPTIONS = [9, 15, 25, 50];
+
+function buildPageList(current: number, total: number): (number | "…")[] {
+  if (total <= 1) return [1];
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const items: (number | "…")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) items.push("…");
+  for (let i = start; i <= end; i++) items.push(i);
+  if (end < total - 1) items.push("…");
+  items.push(total);
+  return items;
+}
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -67,6 +81,9 @@ const getMyRole = (): string => {
 };
 
 export default function Tasks() {
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_LIMIT);
+  const [pageJump, setPageJump] = useState<string>("");
+  const [showClosed, setShowClosed] = useState<boolean>(false);
   const [filters, setFilters] = useState({
     page: 1,
     limit: DEFAULT_LIMIT,
@@ -94,9 +111,9 @@ export default function Tasks() {
   const currentPage = pagination.current_page ?? filters.page ?? 1;
   const pages = pagination.pages;
 
-  const fetchTasks = async (next?: Partial<typeof filters>) => {
+  const fetchTasks = async (next?: Partial<typeof filters> & { showClosedOverride?: boolean }) => {
     const merged = { ...filters, ...(next || {}) };
-    setFilters(merged);
+    setFilters({ page: merged.page, limit: merged.limit, skill_slugs: merged.skill_slugs, q: merged.q, reward_min: merged.reward_min });
     setLoading(true);
     setError("");
     try {
@@ -107,6 +124,10 @@ export default function Tasks() {
       if (merged.q) params.q = merged.q;
       if (merged.skill_slugs?.length) params.skill_slugs = merged.skill_slugs.join(",");
       if (merged.reward_min) params.reward_min = Number(merged.reward_min) || 0;
+      // По умолчанию скрываем завершённые и взятые в работу — студент берёт
+      // только статус OPEN. Чекбокс открывает все.
+      const wantClosed = next?.showClosedOverride ?? showClosed;
+      if (!wantClosed) params.status = TASK_STATUS.OPEN;
       const resp = await TasksAPI.list(params);
       setTasks(resp.tasks || []);
       setPagination(resp.pagination || {});
@@ -138,7 +159,7 @@ export default function Tasks() {
   }, [filters.q, filters.reward_min, filters.skill_slugs.join(",")]);
 
   const reset = () => {
-    const base = { page: 1, limit: DEFAULT_LIMIT, skill_slugs: [] as string[], q: "", reward_min: "" };
+    const base = { page: 1, limit: pageSize, skill_slugs: [] as string[], q: "", reward_min: "" };
     setFilters(base);
     fetchTasks(base);
   };
@@ -254,27 +275,101 @@ export default function Tasks() {
               placeholder="Например: go, postgresql, docker"
             />
           </div>
+
+          <label className="mj-vac-show-closed" style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink-muted)" }}>
+            <input
+              type="checkbox"
+              checked={showClosed}
+              onChange={(e) => {
+                const v = e.target.checked;
+                setShowClosed(v);
+                fetchTasks({ page: 1, showClosedOverride: v });
+              }}
+              style={{ accentColor: "var(--brand)" }}
+            />
+            Показывать завершённые и взятые
+          </label>
         </div>
 
         <div className="mj-vac-meta">
-          <div>Найдено: {tasks.length}</div>
+          <div className="mj-vac-meta-left">
+            <span className="mj-vac-found">
+              {typeof pagination.total === "number"
+                ? `Найдено: ${pagination.total}`
+                : `Найдено: ${tasks.length}`}
+            </span>
+            <span className="mj-vac-meta-sep">·</span>
+            <span className="mj-vac-page-info">
+              Страница <strong>{currentPage}</strong>
+              {typeof pages === "number" ? <> из <strong>{pages}</strong></> : null}
+            </span>
+            <span className="mj-vac-meta-sep">·</span>
+            <label className="mj-vac-pagesize">
+              <span>Показывать по</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const next = Number(e.target.value) || DEFAULT_LIMIT;
+                  setPageSize(next);
+                  fetchTasks({ page: 1, limit: next });
+                }}
+                disabled={loading}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <div className="mj-vac-pagination">
-            <button
-              onClick={() => fetchTasks({ page: Math.max(1, currentPage - 1) })}
-              disabled={loading || currentPage <= 1}
-            >
-              Назад
-            </button>
-            <button
-              onClick={() => fetchTasks({ page: currentPage + 1 })}
-              disabled={
-                loading ||
-                (typeof pages === "number" ? currentPage >= pages : false)
-              }
-            >
-              Вперёд
-            </button>
+            <button type="button" onClick={() => fetchTasks({ page: 1 })} disabled={loading || currentPage <= 1} title="Первая страница" aria-label="Первая страница">«</button>
+            <button type="button" onClick={() => fetchTasks({ page: Math.max(1, currentPage - 1) })} disabled={loading || currentPage <= 1} title="Предыдущая страница" aria-label="Предыдущая страница">‹</button>
+
+            {typeof pages === "number"
+              ? buildPageList(currentPage, pages).map((p, i) =>
+                  p === "…" ? (
+                    <span key={`gap-${i}`} className="mj-vac-page-ellipsis">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => fetchTasks({ page: p })}
+                      disabled={loading || p === currentPage}
+                      className={p === currentPage ? "is-current" : ""}
+                      aria-current={p === currentPage ? "page" : undefined}
+                    >
+                      {p}
+                    </button>
+                  )
+                )
+              : null}
+
+            <button type="button" onClick={() => fetchTasks({ page: currentPage + 1 })} disabled={loading || (typeof pages === "number" ? currentPage >= pages : false)} title="Следующая страница" aria-label="Следующая страница">›</button>
+            <button type="button" onClick={() => fetchTasks({ page: pages as number })} disabled={loading || typeof pages !== "number" || currentPage >= (pages as number)} title="Последняя страница" aria-label="Последняя страница">»</button>
+
+            {typeof pages === "number" && pages > 7 ? (
+              <form
+                className="mj-vac-page-jump"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const n = Math.min(Math.max(1, Number(pageJump) || 1), pages as number);
+                  setPageJump("");
+                  fetchTasks({ page: n });
+                }}
+              >
+                <input
+                  type="number"
+                  min={1}
+                  max={pages}
+                  placeholder="№"
+                  value={pageJump}
+                  onChange={(e) => setPageJump(e.target.value)}
+                  aria-label="Перейти к странице"
+                />
+                <button type="submit" disabled={loading || !pageJump}>↵</button>
+              </form>
+            ) : null}
           </div>
         </div>
 

@@ -47,6 +47,8 @@ const AchievementsBlock = forwardRef<
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [selectedType, setSelectedType] = useState<number>(0);
+  // null = «все типы» (без фильтра). Иначе — type для items.filter.
+  const [filterType, setFilterType] = useState<number | null>(null);
   const toast = useToast();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -152,32 +154,82 @@ const AchievementsBlock = forwardRef<
         onChange={handleFileChange}
       />
 
-      <div className="achievement-type-row">
-        <label>Тип нового достижения:</label>
-        <select
-          value={selectedType}
-          onChange={(e) => setSelectedType(Number(e.target.value))}
-        >
-          {ACHIEVEMENT_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+      <div className="achievement-toolbar">
+        <div className="achievement-toolbar__group">
+          <label className="achievement-toolbar__label" htmlFor="ach-new-type">
+            Загружаю как
+          </label>
+          <select
+            id="ach-new-type"
+            value={selectedType}
+            onChange={(e) => setSelectedType(Number(e.target.value))}
+          >
+            {ACHIEVEMENT_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="achievement-toolbar__upload-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            title="Выбрать файл"
+          >
+            + Файл
+          </button>
+        </div>
+
+        <div className="achievement-toolbar__group achievement-toolbar__group--filter">
+          <label className="achievement-toolbar__label" htmlFor="ach-filter-type">
+            Фильтр
+          </label>
+          <select
+            id="ach-filter-type"
+            value={filterType === null ? "" : String(filterType)}
+            onChange={(e) =>
+              setFilterType(e.target.value === "" ? null : Number(e.target.value))
+            }
+          >
+            <option value="">Все типы</option>
+            {ACHIEVEMENT_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && <p style={{ color: "var(--fg-muted)", fontSize: 13 }}>Загружаем достижения...</p>}
       {error && <p className="profile-error">{error}</p>}
 
-      {!loading && items.length === 0 && (
-        <p style={{ color: "var(--fg-subtle)", fontSize: 13, fontStyle: "italic" }}>
-          Здесь будут ваши достижения. Загрузите первое — и нажмите «На проверку», чтобы подтвердить навыки у эксперта.
-        </p>
-      )}
+      {(() => {
+        const visibleItems =
+          filterType === null
+            ? items
+            : items.filter((it) => (it.type ?? 0) === filterType);
 
-      {items.length > 0 && (
+        if (!loading && items.length === 0) {
+          return (
+            <p style={{ color: "var(--fg-subtle)", fontSize: 13, fontStyle: "italic" }}>
+              Здесь будут ваши достижения. Загрузите первое — и нажмите «На проверку», чтобы подтвердить навыки у эксперта.
+            </p>
+          );
+        }
+        if (items.length > 0 && visibleItems.length === 0) {
+          return (
+            <p style={{ color: "var(--fg-subtle)", fontSize: 13, fontStyle: "italic" }}>
+              Под этот фильтр ничего нет. Снимите фильтр, чтобы увидеть остальные достижения.
+            </p>
+          );
+        }
+        if (visibleItems.length === 0) return null;
+
+        return (
         <ul className="achievements-list">
-          {items.map((a) => {
+          {visibleItems.map((a) => {
             const status = a.verification_status;
             const canSubmit =
               !!a.numeric_id &&
@@ -274,7 +326,8 @@ const AchievementsBlock = forwardRef<
             );
           })}
         </ul>
-      )}
+        );
+      })()}
     </div>
   );
 });
