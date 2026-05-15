@@ -318,6 +318,10 @@ export default function Vacancies() {
 
   const [responding, setResponding] = useState(false);
   const [respondMessage, setRespondMessage] = useState<string>("");
+  const [coverLetter, setCoverLetter] = useState<string>("");
+  const [appliedVacancyIds, setAppliedVacancyIds] = useState<Set<string>>(
+    () => new Set<string>()
+  );
 
   const [meApi, setMeApi] = useState<any>(null);
   useEffect(() => {
@@ -350,6 +354,30 @@ export default function Vacancies() {
   const canRespond =
     roleFromLS === ROLE_STUDENT ||
     isStudent(meApi) || isStudent(meLocal) || isStudent(jwt);
+
+  // Прелоад собственных откликов: помечаем уже-откликнувшиеся вакансии,
+  // чтобы кнопка не предлагала отправить отклик повторно без F5.
+  useEffect(() => {
+    if (!canRespond) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await ApplicationsAPI.listMine({ limit: 100 });
+        if (cancelled) return;
+        const ids = new Set<string>(
+          (list.applications || [])
+            .map((a) => String(a.vacancy_id || "").trim())
+            .filter(Boolean)
+        );
+        setAppliedVacancyIds(ids);
+      } catch {
+        /* не критично — кнопка останется доступной */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canRespond]);
 
   const hideListViewButton =
     roleFromLS === ROLE_EMPLOYER || roleFromLS === ROLE_HR ||
@@ -600,6 +628,7 @@ export default function Vacancies() {
   useEffect(() => {
     setRespondMessage("");
     setResponding(false);
+    setCoverLetter("");
   }, [selected]);
 
   const attachmentHref = (selected as any)?.attachment_url
@@ -627,17 +656,15 @@ export default function Vacancies() {
     try {
       setResponding(true);
       setRespondMessage("");
-      const coverLetter = window.prompt(
-        "Сопроводительное письмо (необязательно). Оставьте пустым, чтобы отправить без него.",
-        ""
-      );
-      // null = «Отмена» → не отправляем отклик
-      if (coverLetter === null) {
-        setResponding(false);
-        return;
-      }
-      await respondToVacancy(id, coverLetter || undefined);
+      const trimmed = coverLetter.trim();
+      await respondToVacancy(id, trimmed || undefined);
       setRespondMessage("Отклик отправлен ✅");
+      setAppliedVacancyIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+      setCoverLetter("");
     } catch (e: any) {
       const msg =
         typeof e === "string"
@@ -1029,37 +1056,85 @@ export default function Vacancies() {
             </div>
 
             {canRespond ? (
-              <div style={{ marginTop: 16 }}>
-                <button
-                  type="button"
-                  onClick={handleRespond}
-                  disabled={responding}
-                  className="mj-vac-btn"
+              appliedVacancyIds.has(String((selected as any)?.id || "")) ? (
+                <div
+                  className="mj-vac-applied"
                   style={{
-                    width: "100%",
-                    borderRadius: 14,
-                    padding: "12px 16px",
-                    fontWeight: 900,
-                    cursor: responding ? "not-allowed" : "pointer",
+                    marginTop: 16,
+                    padding: "14px 16px",
+                    borderRadius: 12,
+                    background: "var(--verified-soft)",
+                    border: "1px solid var(--verified)",
+                    color: "var(--verified)",
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    fontSize: 13,
+                    textAlign: "center",
                   }}
                 >
-                  {responding ? "Отправляем отклик…" : "Откликнуться"}
-                </button>
-
-                {respondMessage ? (
-                  <div
+                  Отклик уже отправлен — посмотреть в «Мои отклики»
+                </div>
+              ) : (
+                <div className="mj-vac-respond" style={{ marginTop: 20 }}>
+                  <label
+                    className="mj-vac-label"
+                    htmlFor="vac-cover-letter"
+                    style={{ display: "block", marginBottom: 8 }}
+                  >
+                    Сопроводительное письмо <span style={{ opacity: 0.6 }}>(необязательно)</span>
+                  </label>
+                  <textarea
+                    id="vac-cover-letter"
+                    className="mj-vac-input"
+                    rows={5}
+                    placeholder="Расскажите HR, почему вы подходите на эту позицию: релевантный опыт, мотивация, ссылки на ваши работы…"
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    disabled={responding}
                     style={{
-                      marginTop: 10,
-                      fontWeight: 800,
-                      color: respondMessage.includes("✅")
-                        ? "#1f7a1f"
-                        : "#c02838",
+                      width: "100%",
+                      resize: "vertical",
+                      minHeight: 110,
+                      lineHeight: 1.5,
+                      padding: "12px 14px",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRespond}
+                    disabled={responding}
+                    className="mj-vac-btn"
+                    style={{
+                      width: "100%",
+                      marginTop: 12,
+                      borderRadius: 14,
+                      padding: "12px 16px",
+                      fontWeight: 900,
+                      cursor: responding ? "not-allowed" : "pointer",
                     }}
                   >
-                    {respondMessage}
-                  </div>
-                ) : null}
-              </div>
+                    {responding ? "Отправляем отклик…" : "Откликнуться"}
+                  </button>
+
+                  {respondMessage ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        fontWeight: 700,
+                        fontSize: 13,
+                        color: respondMessage.includes("✅")
+                          ? "var(--verified)"
+                          : "var(--danger)",
+                      }}
+                    >
+                      {respondMessage}
+                    </div>
+                  ) : null}
+                </div>
+              )
             ) : null}
           </div>
         </div>
