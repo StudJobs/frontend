@@ -289,6 +289,40 @@ export const AchievementsAPI = {
     return r;
   },
 
+  // Создаёт ачивку только-ссылку (без файла). Используется когда у студента нет
+  // PDF/архива, а есть только URL: репозиторий, страница курса, портфолио и т.д.
+  // Под капотом — обычный confirm с file_type=external/url, ObjectExists на бэке
+  // пропускается, file_name= URL (фронт при list берёт его как download-ссылку).
+  async createLink(input: {
+    externalURL: string;
+    type: number;
+    displayName?: string;
+    description?: string;
+    skillSlug?: string;
+  }): Promise<{ id: string }> {
+    const url = input.externalURL.trim();
+    if (!url) throw new Error("URL is required");
+    const name =
+      input.displayName?.trim() ||
+      `link-${url.replace(/^https?:\/\//, "").slice(0, 32)}-${Date.now()}`;
+    const fakeKey = `link-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await apiGateway({
+      method: "POST",
+      url: `/user/achievements/${encodeURIComponent(name)}/confirm`,
+      data: {
+        s3_key: fakeKey,
+        file_name: url,
+        file_type: "external/url",
+        file_size: url.length,
+        type: input.type,
+        external_url: url,
+        description: input.description,
+        skill_slug: input.skillSlug,
+      },
+    });
+    return { id: name };
+  },
+
   async remove(id: string) {
     await apiGateway({
       method: "DELETE",

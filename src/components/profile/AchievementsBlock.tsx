@@ -120,6 +120,30 @@ const AchievementsBlock = forwardRef<
     }
   };
 
+  const handleSaveLink = async () => {
+    const url = externalURL.trim();
+    if (!url || selectedType === 0) return;
+    try {
+      setLoading(true);
+      setError("");
+      await AchievementsAPI.createLink({
+        externalURL: url,
+        type: selectedType,
+        description: description.trim() || undefined,
+      });
+      await loadAchievements();
+      setExternalURL("");
+      setDescription("");
+      toast.success("Ссылка сохранена", "Появилась в списке как самостоятельное достижение — можно отправить эксперту.");
+    } catch (err: any) {
+      console.error("Ошибка сохранения ссылки:", err);
+      setError(err?.message || "Не удалось сохранить ссылку.");
+      toast.danger("Не удалось сохранить ссылку", err?.error || err?.message || "");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm("Удалить это достижение?")) return;
     try {
@@ -194,6 +218,21 @@ const AchievementsBlock = forwardRef<
           >
             + Файл
           </button>
+          <button
+            type="button"
+            className="achievement-toolbar__upload-btn"
+            onClick={handleSaveLink}
+            disabled={loading || selectedType === 0 || !externalURL.trim()}
+            title={
+              selectedType === 0
+                ? "Сначала выберите тип"
+                : !externalURL.trim()
+                ? "Заполните «Ссылка» в блоке ниже"
+                : "Сохранить ссылку без файла"
+            }
+          >
+            + Только ссылка
+          </button>
         </div>
 
         <div className="achievement-toolbar__group achievement-toolbar__group--filter">
@@ -244,7 +283,9 @@ const AchievementsBlock = forwardRef<
             />
           </label>
           <p className="achievement-extras__hint">
-            Поля прикрепятся ко всем достижениям, загруженным до следующей очистки. Очистка — после успешного upload.
+            Заполните «Ссылка» и нажмите <strong>«+ Только ссылка»</strong> чтобы сохранить ачивку
+            без файла (репозиторий, страница курса, портфолио). Либо оставьте поля и загрузите файл —
+            тогда они прикрепятся к нему.
           </p>
         </div>
       </details>
