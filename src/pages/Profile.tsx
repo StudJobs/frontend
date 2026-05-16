@@ -9,9 +9,15 @@ import { apiGateway } from "../api/apiGateway";
 import AchievementsBlock, {
   AchievementsBlockHandle,
 } from "../components/profile/AchievementsBlock";
-import { AchievementsAPI, AchievementItem } from "../api/achievements";
+import {
+  AchievementsAPI,
+  AchievementItem,
+  ACHIEVEMENT_TYPE_SKILL_VERIFICATION,
+  VERIFICATION_STATUS,
+} from "../api/achievements";
 import SkillBadges from "../components/ui/SkillBadges";
 import Onboarding from "../components/profile/Onboarding";
+import { useToast } from "../components/ui/Toast";
 
 type UserProfile = {
   first_name?: string;
@@ -223,34 +229,7 @@ export default function Profile() {
 
               <div className="profile-about" style={{ marginTop: 16 }}>
                 <h2 className="profile-about-title">Навыки:</h2>
-                {(() => {
-                  const verified = p.verified_skill_slugs || [];
-                  const declared = (p.skill_slugs || []).filter((s) => !verified.includes(s));
-                  return (
-                    <>
-                      {verified.length > 0 && (
-                        <div style={{ marginBottom: 10 }}>
-                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                            Подтверждено экспертом или микрозадачей
-                          </div>
-                          <SkillBadges slugs={verified} variant="verified" />
-                        </div>
-                      )}
-                      {declared.length > 0 && (
-                        <div>
-                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                            Заявлено вами (не подтверждено). Для подтверждения завершите микрозадачу с этим навыком
-                            или пройдите квест от эксперта.
-                          </div>
-                          <SkillBadges slugs={declared} variant="neutral" />
-                        </div>
-                      )}
-                      {verified.length === 0 && declared.length === 0 && (
-                        <SkillBadges slugs={[]} />
-                      )}
-                    </>
-                  );
-                })()}
+                <SkillsManager profile={p} onReload={loadProfile} />
               </div>
 
               <div className="profile-achievements">
@@ -307,5 +286,179 @@ export default function Profile() {
 
       <Footer />
     </div>
+  );
+}
+
+// SkillsManager — управление навыками в профиле студента.
+// Делит навыки на 3 группы: verified (подтверждённые), pending (в очереди эксперта),
+// declared (заявленные, ещё не отправлены). Кнопка «Подтвердить» открывает модалку
+// для загрузки доказательства; submit создаёт SKILL_VERIFICATION-ачивку и автоматически
+// отправляет её на ревью.
+function SkillsManager({ profile, onReload }: { profile: UserProfile; onReload: () => void | Promise<void> }) {
+  const toast = useToast();
+  const [pendingSlugs, setPendingSlugs] = useState<Set<string>>(new Set());
+  const [modalSlug, setModalSlug] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [url, setUrl] = useState("");
+  const [desc, setDesc] = useState("");
+
+  const verified = profile.verified_skill_slugs || [];
+  const declared = (profile.skill_slugs || []).filter((s) => !verified.includes(s));
+
+  // Подгружаем ачивки чтобы понять какие skill уже на ревью (PENDING/DRAFT skill_verification).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const all = await AchievementsAPI.list();
+        if (cancelled) return;
+        const set = new Set<string>();
+        for (const a of all) {
+          if (a.type === ACHIEVEMENT_TYPE_SKILL_VERIFICATION && a.skill_slug) {
+            if (
+              a.verification_status === VERIFICATION_STATUS.PENDING ||
+              a.verification_status === VERIFICATION_STATUS.DRAFT
+            ) {
+              set.add(a.skill_slug);
+            }
+          }
+        }
+        setPendingSlugs(set);
+      } catch {
+        // молча
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.skill_slugs?.join(","), profile.verified_skill_slugs?.join(",")]);
+
+  function closeModal() {
+    setModalSlug(null);
+    setFile(null);
+    setUrl("");
+    setDesc("");
+  }
+
+  async function submitVerification() {
+    if (!modalSlug) return;
+    if (!file) {
+      toast.danger("Прикрепите файл-доказательство (PDF, скрин курса, диплом)");
+      return;
+    }
+    setBusy(true);
+    try {
+      await AchievementsAPI.createSkillVerification({
+        skillSlug: modalSlug,
+        file,
+        externalURL: url.trim() || undefined,
+        description: desc.trim() || undefined,
+      });
+      toast.success("Заявка отправлена", `Эксперт получит файл по навыку «${modalSlug}» в очереди проверки.`);
+      setPendingSlugs((prev) => new Set(prev).add(modalSlug));
+      closeModal();
+      await onReload();
+    } catch (e: any) {
+      toast.danger("Не удалось отправить", e?.error || e?.message || "Попробуйте позже.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      {verified.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+            Подтверждено экспертом или микрозадачей
+          </div>
+          <SkillBadges slugs={verified} variant="verified" />
+        </div>
+      )}
+
+      {declared.length > 0 && (
+        <div>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+            Заявлено вами. Чтобы навык появился в публичном профиле, отправьте
+            эксперту доказательство (сертификат / диплом / ссылку на работу) — кнопка ниже.
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {declared.map((s) => {
+              const pending = pendingSlugs.has(s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  className="chip"
+                  disabled={pending}
+                  onClick={() => setModalSlug(s)}
+                  title={pending ? "Уже на проверке" : "Подтвердить навык — отправить файл эксперту"}
+                  style={{ opacity: pending ? 0.6 : 1, cursor: pending ? "default" : "pointer" }}
+                >
+                  # {s} {pending ? "· на проверке ⏳" : "· подтвердить"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {verified.length === 0 && declared.length === 0 && <SkillBadges slugs={[]} />}
+
+      {modalSlug && (
+        <div
+          className="mj-modal-backdrop"
+          onClick={() => !busy && closeModal()}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <div
+            className="mj-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 520, width: "92%", background: "var(--surface)", padding: 22, borderRadius: 16 }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 6, fontFamily: "var(--font-display)" }}>
+              Подтвердить навык «{modalSlug}»
+            </h3>
+            <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+              Прикрепите доказательство: сертификат, диплом, скриншот завершённого курса
+              или код-репозиторий. Эксперт проверит и подтвердит навык — после этого он
+              появится в публичном профиле с зелёным бейджем.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+              <label className="muted" style={{ fontSize: 12 }}>
+                Файл-доказательство (обязательно)
+                <input
+                  type="file"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  style={{ display: "block", marginTop: 4 }}
+                />
+              </label>
+              <input
+                className="mj-vac-input"
+                placeholder="Ссылка на репозиторий / гист / профиль (опц.)"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              <textarea
+                className="mj-vac-input"
+                rows={3}
+                placeholder="Контекст для эксперта: что именно вы делали с этим навыком"
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+              <button type="button" className="btn btn--primary" disabled={busy || !file} onClick={submitVerification}>
+                {busy ? "Отправка…" : "Отправить эксперту"}
+              </button>
+              <button type="button" className="btn btn--ghost" disabled={busy} onClick={closeModal}>
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

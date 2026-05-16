@@ -14,9 +14,12 @@ export type AchievementItem = {
   review_comment?: string;
   external_url?: string;
   description?: string;
+  skill_slug?: string;
   user_uuid?: string;
   created_at?: string;
 };
+
+export const ACHIEVEMENT_TYPE_SKILL_VERIFICATION = 7;
 
 export const ACHIEVEMENT_TYPES: Array<{ value: number; label: string }> = [
   { value: 0, label: "Без типа" },
@@ -141,6 +144,7 @@ export const AchievementsAPI = {
         review_comment: item.review_comment ?? undefined,
         external_url: item.external_url ?? undefined,
         description: item.description ?? undefined,
+        skill_slug: item.skill_slug ?? undefined,
         user_uuid: item.user_uuid ?? undefined,
         created_at: item.created_at ?? undefined,
       });
@@ -161,7 +165,8 @@ export const AchievementsAPI = {
     displayName?: string,
     type: number = 0,
     externalURL?: string,
-    description?: string
+    description?: string,
+    skillSlug?: string
   ) {
     const name = displayName || file.name;
 
@@ -176,6 +181,7 @@ export const AchievementsAPI = {
         type,
         external_url: externalURL || undefined,
         description: description || undefined,
+        skill_slug: skillSlug || undefined,
       },
     });
 
@@ -244,10 +250,43 @@ export const AchievementsAPI = {
         type,
         external_url: externalURL || undefined,
         description: description || undefined,
+        skill_slug: skillSlug || undefined,
       },
     });
 
     return { id };
+  },
+
+  // Студент инициирует подтверждение конкретного навыка: грузит файл-доказательство
+  // (диплом/сертификат/скриншот) + опц. URL и описание. После upload автоматически
+  // submitForReview. При approve экспертом backend добавит навык в verified_skill_slugs.
+  async createSkillVerification(input: {
+    skillSlug: string;
+    file: File;
+    externalURL?: string;
+    description?: string;
+    displayName?: string;
+  }): Promise<{ id: string }> {
+    const name = input.displayName || `verify-${input.skillSlug}-${Date.now()}`;
+    const r = await this.upload(
+      input.file,
+      name,
+      ACHIEVEMENT_TYPE_SKILL_VERIFICATION,
+      input.externalURL,
+      input.description,
+      input.skillSlug
+    );
+    // Получаем числовой ID через свежий list-запрос.
+    try {
+      const list = await this.list();
+      const created = list.find((a) => a.name === name);
+      if (created?.numeric_id) {
+        await this.submitForReview(created.numeric_id);
+      }
+    } catch (e) {
+      console.warn("createSkillVerification: auto-submit failed", e);
+    }
+    return r;
   },
 
   async remove(id: string) {
