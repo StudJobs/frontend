@@ -15,7 +15,6 @@ import {
 } from "../api/achievements";
 import { useToast } from "../components/ui/Toast";
 import { UsersAPI } from "../api/users";
-import { apiGateway } from "../api/apiGateway";
 import SkillsInput from "../components/ui/SkillsInput";
 import SkillBadges from "../components/ui/SkillBadges";
 
@@ -30,10 +29,9 @@ export default function Expert() {
   const [reviewMsg, setReviewMsg] = useState("");
   const toast = useToast();
 
-  // Профиль самого эксперта — чтобы знать его expert_skill_slugs.
-  const [expertSkills, setExpertSkills] = useState<string[]>([]);
-  const [editingSkills, setEditingSkills] = useState<string[]>([]);
-  const [skillsBusy, setSkillsBusy] = useState(false);
+  // Только подтверждённые тестом навыки эксперта — только по ним он может ревьюить
+  // «проектные» ачивки (PET_PROJECT, SKILL_VERIFICATION). Сертификатные — всегда.
+  const [verifiedSkills, setVerifiedSkills] = useState<string[]>([]);
 
   // Фильтры очереди.
   const [filterByMine, setFilterByMine] = useState<boolean>(true);
@@ -43,9 +41,7 @@ export default function Expert() {
   async function fetchProfile() {
     try {
       const me = await UsersAPI.me(true);
-      const skills = me?.profile?.expert_skill_slugs || [];
-      setExpertSkills(skills);
-      setEditingSkills(skills);
+      setVerifiedSkills(me?.profile?.expert_verified_skill_slugs || []);
     } catch {
       // эксперт без профиля — без фильтра
     }
@@ -70,38 +66,18 @@ export default function Expert() {
     void fetchQueue();
   }, []);
 
-  async function saveExpertSkills() {
-    setSkillsBusy(true);
-    try {
-      await apiGateway({
-        method: "PATCH",
-        url: "/users/edit",
-        data: { expert_skill_slugs: editingSkills },
-      });
-      setExpertSkills(editingSkills);
-      // Сбрасываем кэш /users/me чтобы следующий fetchProfile получил свежие данные.
-      UsersAPI.clearMeCache();
-      toast.success("Сохранено", "Очередь теперь фильтруется по вашим навыкам.");
-    } catch (e: any) {
-      toast.danger("Не удалось сохранить", e?.error || e?.message || "");
-    } finally {
-      setSkillsBusy(false);
-    }
-  }
-
   const filtered = useMemo(() => {
     const activeFilter =
-      filterSlugs.length > 0 ? filterSlugs : filterByMine ? expertSkills : [];
+      filterSlugs.length > 0 ? filterSlugs : filterByMine ? verifiedSkills : [];
     return items.filter((a) => {
       if (onlySkillRequests && a.type !== ACHIEVEMENT_TYPE_SKILL_VERIFICATION) return false;
       if (activeFilter.length === 0) return true;
-      // Если у заявки есть skill_slug — фильтруем по нему. Если нет (обычная ачивка
-      // без skill-тега) — показываем когда фильтр пуст или onlySkillRequests=false.
       if (a.skill_slug) return activeFilter.includes(a.skill_slug);
-      // Обычные ачивки без skill_slug пропускаем, если активен фильтр по навыкам.
-      return false;
+      // Если у ачивки нет skill_slug — это сертификатная (COURSE/HACKATHON/COURSEWORK).
+      // Их видно всегда, даже когда активен фильтр по навыкам.
+      return true;
     });
-  }, [items, filterSlugs, filterByMine, expertSkills, onlySkillRequests]);
+  }, [items, filterSlugs, filterByMine, verifiedSkills, onlySkillRequests]);
 
   const setDraft = (id: number, patch: Partial<DraftReview>) => {
     setDrafts((d) => ({
@@ -152,26 +128,25 @@ export default function Expert() {
           по своим навыкам — эксперт не обязан проверять всё.
         </p>
 
-        {/* Блок «Мои навыки эксперта» */}
+        {/* Блок «Мои подтверждённые навыки эксперта» (управляются в /expert-profile) */}
         <div className="mj-vac-filters" style={{ marginBottom: 18 }}>
           <div className="mj-label" style={{ marginBottom: 6 }}>
-            Моя экспертиза (по этим навыкам очередь фильтруется по умолчанию)
+            Моя подтверждённая экспертиза
           </div>
-          <SkillsInput value={editingSkills} onChange={setEditingSkills} placeholder="Например: go, react, postgresql" />
-          {editingSkills.join(",") !== expertSkills.join(",") && (
-            <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-              <button className="mj-vac-btn" onClick={saveExpertSkills} disabled={skillsBusy}>
-                {skillsBusy ? "Сохранение…" : "Сохранить экспертизу"}
-              </button>
-              <button className="mj-vac-btn mj-vac-btn--ghost" onClick={() => setEditingSkills(expertSkills)}>
-                Отменить
-              </button>
+          {verifiedSkills.length === 0 ? (
+            <div className="muted" style={{ fontSize: 13 }}>
+              Пока ни один навык не подтверждён тестом. Откройте{" "}
+              <a className="link" href="/expert-profile">Личный кабинет</a>, добавьте навыки и пройдите тест —
+              после этого вам станут доступны для ревью «проектные» ачивки.
             </div>
-          )}
-          {expertSkills.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <SkillBadges slugs={expertSkills} variant="verified" />
-            </div>
+          ) : (
+            <>
+              <SkillBadges slugs={verifiedSkills} variant="verified" />
+              <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                Управление навыками и тестами — в{" "}
+                <a className="link" href="/expert-profile">личном кабинете</a>.
+              </div>
+            </>
           )}
         </div>
 

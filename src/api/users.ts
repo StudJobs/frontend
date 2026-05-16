@@ -28,6 +28,8 @@ export type UserListItem = {
 
   skill_slugs?: string[];
   verified_skill_slugs?: string[];
+  expert_skill_slugs?: string[];
+  expert_verified_skill_slugs?: string[];
   role?: string;
 };
 

@@ -87,7 +87,7 @@ function profileTargetForRole(role: string | null): string {
     case "ROLE_COMPANY":
       return "/hr";
     case "ROLE_EXPERT":
-      return "/expert";
+      return "/expert-profile";
     case "ROLE_STUDENT":
       return "/profile";
     default:

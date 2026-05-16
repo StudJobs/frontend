@@ -15,6 +15,7 @@ import Users from "./pages/Users";
 import Tasks from "./pages/Tasks";
 import HRTasks from "./pages/HRTasks";
 import Expert from "./pages/Expert";
+import ExpertProfile from "./pages/ExpertProfile";
 import PublicProfile from "./pages/PublicProfile";
 import HRDashboard from "./pages/HRDashboard";
 import MyApplications from "./pages/MyApplications";
@@ -142,6 +143,15 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ROLE_EXPERT"]}>
               <Expert />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/expert-profile"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EXPERT"]}>
+              <ExpertProfile />
             </PrivateRoute>
           }
         />
