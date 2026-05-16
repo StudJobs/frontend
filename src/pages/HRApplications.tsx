@@ -11,7 +11,6 @@ import {
 } from "../api/applications";
 import { apiGateway } from "../api/apiGateway";
 import { useToast } from "../components/ui/Toast";
-import ChatPanel from "../components/ui/ChatPanel";
 
 // HR-доска: отклики на одну конкретную вакансию.
 // URL: /hr/applications?vacancy_id=...
@@ -216,7 +215,11 @@ export default function HRApplications() {
                       </div>
                     )}
 
-                    <ChatPanel kind="application" rid={a.id} title="Чат с кандидатом" collapsedDefault />
+                    <div style={{ marginTop: 10, borderTop: "1px dashed var(--border)", paddingTop: 8 }}>
+                      <Link className="link" to={`/messages?thread=application:${encodeURIComponent(a.id)}`}>
+                        Открыть чат с кандидатом →
+                      </Link>
+                    </div>
                   </article>
                 );
               })}

@@ -93,6 +93,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
       p.startsWith("/expert/") ||
       p === "/expert-profile" ||
       p.startsWith("/expert-profile/") ||
+      p === "/messages" ||
+      p.startsWith("/messages/") ||
       p.startsWith("/u/"); // публичные профили студентов эксперту тоже нужны
     if (!ok) {
       return <Navigate to="/expert" replace />;

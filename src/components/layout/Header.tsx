@@ -52,24 +52,30 @@ function navForRole(role: string | null): NavItem[] {
         { to: "/tasks", label: "Микрозадачи" },
         { to: "/profile", label: "Портфолио" },
         { to: "/my/applications", label: "Отклики" },
+        { to: "/messages", label: "Сообщения" },
       ];
     case "ROLE_EMPLOYER":
       return [
         { to: "/hr", label: "Кабинет" },
         { to: "/hr-profile", label: "Мои вакансии" },
         { to: "/hr/tasks", label: "Микрозадачи" },
+        { to: "/hr-membership", label: "Моя компания" },
         { to: "/users", label: "Кандидаты" },
+        { to: "/messages", label: "Сообщения" },
       ];
     case "ROLE_COMPANY_OWNER":
     case "ROLE_COMPANY":
       return [
         { to: "/hr", label: "Кабинет" },
+        { to: "/company-admin", label: "Модерация" },
         { to: "/company-profile", label: "Компания" },
         { to: "/hr/tasks", label: "Микрозадачи" },
+        { to: "/messages", label: "Сообщения" },
       ];
     case "ROLE_EXPERT":
       return [
         { to: "/expert", label: "Очередь верификации", mark: "EXP" },
+        { to: "/messages", label: "Сообщения" },
       ];
     default:
       return [

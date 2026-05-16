@@ -16,6 +16,9 @@ import Tasks from "./pages/Tasks";
 import HRTasks from "./pages/HRTasks";
 import Expert from "./pages/Expert";
 import ExpertProfile from "./pages/ExpertProfile";
+import Messages from "./pages/Messages";
+import CompanyAdmin from "./pages/CompanyAdmin";
+import HRMembership from "./pages/HRMembership";
 import PublicProfile from "./pages/PublicProfile";
 import HRDashboard from "./pages/HRDashboard";
 import MyApplications from "./pages/MyApplications";
@@ -152,6 +155,33 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ROLE_EXPERT"]}>
               <ExpertProfile />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/messages"
+          element={
+            <PrivateRoute>
+              <Messages />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company-admin"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_COMPANY_OWNER"]}>
+              <CompanyAdmin />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/hr-membership"
+          element={
+            <PrivateRoute allowedRoles={["ROLE_EMPLOYER"]}>
+              <HRMembership />
             </PrivateRoute>
           }
         />

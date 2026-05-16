@@ -33,6 +33,16 @@ export type UserListItem = {
   role?: string;
 };
 
+export type CompanyMember = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  status: number; // 1=PENDING, 2=APPROVED, 3=REJECTED
+  note?: string;
+  created_at?: string;
+  reviewed_at?: string;
+};
+
 export type UsersListResponse = {
   pagination?: {
     current_page?: number;

@@ -20,6 +20,21 @@ export type ThreadKind = "application" | "task" | "quest";
 
 const unwrap = (r: any) => r?.data ?? r ?? {};
 
+export type ChatThread = {
+  thread_id: string;
+  kind?: "application" | "task" | "quest" | string;
+  resource_id?: string;
+  last_message?: string;
+  last_at?: string;
+  unread_count?: number;
+  peer_id?: string;
+  peer_name?: string;
+  peer_role?: string;
+  peer_company?: string;
+  peer_avatar_url?: string;
+  context_title?: string;
+};
+
 export const ChatAPI = {
   async list(kind: ThreadKind, rid: string, params?: { page?: number; limit?: number }): Promise<ChatMessageList> {
     const data = unwrap(
@@ -33,6 +48,11 @@ export const ChatAPI = {
       messages: Array.isArray(data?.messages) ? data.messages : [],
       pagination: data?.pagination,
     };
+  },
+
+  async listThreads(): Promise<ChatThread[]> {
+    const data = unwrap(await apiGateway({ method: "GET", url: "/chat/threads" }));
+    return Array.isArray(data?.threads) ? data.threads : [];
   },
 
   async send(kind: ThreadKind, rid: string, body: string): Promise<ChatMessage> {

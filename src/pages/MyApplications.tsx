@@ -21,7 +21,6 @@ import {
 import { apiGateway } from "../api/apiGateway";
 import { useToast } from "../components/ui/Toast";
 import SkillBadges from "../components/ui/SkillBadges";
-import ChatPanel from "../components/ui/ChatPanel";
 
 type Tab = "vacancies" | "tasks" | "quests";
 
@@ -263,7 +262,11 @@ function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToa
                 </div>
               )}
 
-              <ChatPanel kind="application" rid={a.id} title="Чат с HR" collapsedDefault />
+              <div style={{ marginTop: 10, borderTop: "1px dashed var(--border)", paddingTop: 8 }}>
+                <Link className="link" to={`/messages?thread=application:${encodeURIComponent(a.id)}`}>
+                  Открыть чат с HR →
+                </Link>
+              </div>
             </article>
           );
         })}
@@ -486,12 +489,14 @@ function TasksTab({ q, toast, kind }: { q: string; toast: ReturnType<typeof useT
               )}
 
               {isExpanded && (
-                <ChatPanel
-                  kind={t.is_skill_quest ? "quest" : "task"}
-                  rid={t.id}
-                  title={t.is_skill_quest ? "Чат с экспертом" : "Чат с заказчиком"}
-                  collapsedDefault={false}
-                />
+                <div style={{ marginTop: 10, borderTop: "1px dashed var(--border)", paddingTop: 8 }}>
+                  <Link
+                    className="link"
+                    to={`/messages?thread=${t.is_skill_quest ? "quest" : "task"}:${encodeURIComponent(t.id)}`}
+                  >
+                    {t.is_skill_quest ? "Открыть чат с экспертом →" : "Открыть чат с заказчиком →"}
+                  </Link>
+                </div>
               )}
             </article>
           );

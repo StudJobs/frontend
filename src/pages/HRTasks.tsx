@@ -22,7 +22,7 @@ import {
   submissionStatusLabel,
 } from "../api/tasks";
 import { useToast } from "../components/ui/Toast";
-import ChatPanel from "../components/ui/ChatPanel";
+import { Link } from "react-router-dom";
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -392,13 +392,12 @@ export default function HRTasks() {
               </div>
             )}
 
-            {/* Чат с автором задачи (студент-assigned видит этот же тред). */}
-            <ChatPanel
-              kind="task"
-              rid={activeTask.id}
-              title="Чат со студентом"
-              collapsedDefault={false}
-            />
+            {/* Чат вынесен в отдельную страницу /messages. */}
+            <div style={{ marginTop: 14, borderTop: "1px dashed var(--border)", paddingTop: 10 }}>
+              <Link className="link" to={`/messages?thread=task:${encodeURIComponent(activeTask.id)}`}>
+                Открыть чат со студентом →
+              </Link>
+            </div>
           </div>
         </div>
       ) : null}

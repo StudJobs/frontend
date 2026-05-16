@@ -1,9 +1,10 @@
 import { apiGateway } from "./apiGateway";
 
 export type VacancyItem = {
-  id?: string;
+  id: string;
   title?: string;
   salary?: number;
+  min_salary?: number;
   experience?: number;
   schedule?: string;
   work_format?: string;
@@ -18,6 +19,11 @@ export type VacancyItem = {
   created_at?: string;
 
   skill_slugs?: string[];
+
+  // Модерация (для HR-flow).
+  moderation_status?: number; // 1=PENDING, 2=PUBLISHED, 3=REJECTED
+  author_id?: string;
+  moderation_comment?: string;
 };
 
 export type VacancyPagination = {
@@ -94,5 +100,13 @@ export const VacanciesAPI = {
   async create(payload: any): Promise<VacancyItem> {
     const r = await apiGateway({ method: "POST", url: "/hr/vacancy", data: payload });
     return unwrap(r) as VacancyItem;
+  },
+
+  async listHR(params?: VacancyListParams): Promise<VacancyListResponse> {
+    const r = await apiGateway({ method: "GET", url: "/hr/vacancy", params });
+    const data = unwrap(r);
+    if (Array.isArray(data)) return { vacancies: data };
+    if (Array.isArray(data?.vacancies)) return data as VacancyListResponse;
+    return data as VacancyListResponse;
   },
 };
