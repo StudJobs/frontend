@@ -1,5 +1,5 @@
 // Минимальный чат — polling без WebSocket.
-// thread_id-формат: "application:<uuid>" | "task:<uuid>" | "quest:<uuid>".
+// thread разбит на kind + rid: например, kind="task", rid="<UUID>".
 // Доступ проверяется на стороне Gateway по участникам треда.
 import { apiGateway } from "./apiGateway";
 
@@ -16,12 +16,18 @@ export type ChatMessageList = {
   pagination?: { total?: number; pages?: number; current_page?: number };
 };
 
+export type ThreadKind = "application" | "task" | "quest";
+
 const unwrap = (r: any) => r?.data ?? r ?? {};
 
 export const ChatAPI = {
-  async list(threadId: string, params?: { page?: number; limit?: number }): Promise<ChatMessageList> {
+  async list(kind: ThreadKind, rid: string, params?: { page?: number; limit?: number }): Promise<ChatMessageList> {
     const data = unwrap(
-      await apiGateway({ method: "GET", url: `/chat/${encodeURIComponent(threadId)}`, params })
+      await apiGateway({
+        method: "GET",
+        url: `/chat/${kind}/${encodeURIComponent(rid)}`,
+        params,
+      })
     );
     return {
       messages: Array.isArray(data?.messages) ? data.messages : [],
@@ -29,20 +35,14 @@ export const ChatAPI = {
     };
   },
 
-  async send(threadId: string, body: string): Promise<ChatMessage> {
+  async send(kind: ThreadKind, rid: string, body: string): Promise<ChatMessage> {
     const data = unwrap(
       await apiGateway({
         method: "POST",
-        url: `/chat/${encodeURIComponent(threadId)}`,
+        url: `/chat/${kind}/${encodeURIComponent(rid)}`,
         data: { body },
       })
     );
     return data as ChatMessage;
   },
-};
-
-export const threadId = {
-  application: (id: string) => `application:${id}`,
-  task: (id: string) => `task:${id}`,
-  quest: (id: string) => `quest:${id}`,
 };

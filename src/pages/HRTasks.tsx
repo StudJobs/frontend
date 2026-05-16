@@ -23,7 +23,6 @@ import {
 } from "../api/tasks";
 import { useToast } from "../components/ui/Toast";
 import ChatPanel from "../components/ui/ChatPanel";
-import { threadId as makeThreadId } from "../api/chat";
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -395,7 +394,8 @@ export default function HRTasks() {
 
             {/* Чат с автором задачи (студент-assigned видит этот же тред). */}
             <ChatPanel
-              threadId={makeThreadId.task(activeTask.id)}
+              kind="task"
+              rid={activeTask.id}
               title="Чат со студентом"
               collapsedDefault={false}
             />

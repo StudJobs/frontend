@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { ChatAPI, ChatMessage } from "../../api/chat";
+import { ChatAPI, ChatMessage, ThreadKind } from "../../api/chat";
 import { getCurrentUserId } from "../../api/apiGateway";
 
 // Опускаемый блок-чат для inline-встраивания в карточку application/task/quest.
 // Polling каждые 5 секунд (только когда раскрыт), без WebSocket — простой и устойчивый.
-// Никаких WS, ничего, что упадёт от первой потерянной TLS-сессии.
 export default function ChatPanel({
-  threadId,
+  kind,
+  rid,
   title = "Чат",
   collapsedDefault = true,
 }: {
-  threadId: string;
+  kind: ThreadKind;
+  rid: string;
   title?: string;
   collapsedDefault?: boolean;
 }) {
@@ -24,13 +25,13 @@ export default function ChatPanel({
 
   async function fetchMessages() {
     try {
-      const res = await ChatAPI.list(threadId, { limit: 100 });
+      const res = await ChatAPI.list(kind, rid, { limit: 100 });
       setMessages(res.messages);
       setError("");
     } catch (e: any) {
-      // Гасим 403 как «нет доступа»; остальное — показываем.
       const msg = e?.error || e?.message || "Ошибка чата";
-      if (!String(msg).toLowerCase().includes("not a participant")) {
+      // Гасим «not a participant» / 403 — это «у вас нет доступа», не критично.
+      if (!String(msg).toLowerCase().includes("participant") && !String(msg).toLowerCase().includes("forbidden")) {
         setError(String(msg));
       }
     }
@@ -42,10 +43,9 @@ export default function ChatPanel({
     const t = window.setInterval(() => void fetchMessages(), 5000);
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, threadId]);
+  }, [open, kind, rid]);
 
   useEffect(() => {
-    // Автоскролл вниз при новых сообщениях.
     if (scrollerRef.current) {
       scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
     }
@@ -56,9 +56,10 @@ export default function ChatPanel({
     if (!body) return;
     setBusy(true);
     try {
-      const m = await ChatAPI.send(threadId, body);
+      const m = await ChatAPI.send(kind, rid, body);
       setMessages((prev) => [...prev, m]);
       setText("");
+      setError("");
     } catch (e: any) {
       setError(e?.error || e?.message || "Не удалось отправить");
     } finally {

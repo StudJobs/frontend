@@ -113,11 +113,13 @@ export default function PublicProfile() {
       : "Пользователь";
 
   const avatar = profile?.avatar_url || avatarFallback;
-  const skills = profile?.skill_slugs || [];
-
-  // Skill graph: каждая skill = ячейка. Уровень "verified" — если у юзера хотя бы
-  // одна одобренная ачивка (наличие верификаций общее, не пер-скилл, т.к. в схеме
-  // нет achievement→skill mapping).
+  // На публичной странице показываем ТОЛЬКО подтверждённые навыки (verified_skill_slugs).
+  // Заявленные без верификации в публику не пускаем — иначе любой набил бы себе тегов.
+  const verifiedSet = useMemo(
+    () => new Set(profile?.verified_skill_slugs || []),
+    [profile?.verified_skill_slugs]
+  );
+  const skills = profile?.verified_skill_slugs || [];
   const totalSkillCount = Math.max(skills.length, 1);
 
   return (
@@ -266,10 +268,8 @@ export default function PublicProfile() {
                 <div className="skill-graph">
                   {skills.map((slug) => {
                     const meta = skillMap[slug];
-                    const verified = verifiedCount > 0;
-                    const widthPct = verified
-                      ? Math.min(100, Math.round((verifiedCount / 5) * 100))
-                      : 12;
+                    const verified = verifiedSet.has(slug);
+                    const widthPct = verified ? 100 : 12;
                     return (
                       <div
                         key={slug}

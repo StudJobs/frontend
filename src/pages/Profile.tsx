@@ -26,6 +26,7 @@ type UserProfile = {
   education_institution?: string;
   github?: string;
   skill_slugs?: string[];
+  verified_skill_slugs?: string[];
 };
 
 const unwrap = (resp: any) => resp?.data ?? resp;
@@ -222,7 +223,34 @@ export default function Profile() {
 
               <div className="profile-about" style={{ marginTop: 16 }}>
                 <h2 className="profile-about-title">Навыки:</h2>
-                <SkillBadges slugs={p.skill_slugs || []} />
+                {(() => {
+                  const verified = p.verified_skill_slugs || [];
+                  const declared = (p.skill_slugs || []).filter((s) => !verified.includes(s));
+                  return (
+                    <>
+                      {verified.length > 0 && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                            Подтверждено экспертом или микрозадачей
+                          </div>
+                          <SkillBadges slugs={verified} variant="verified" />
+                        </div>
+                      )}
+                      {declared.length > 0 && (
+                        <div>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                            Заявлено вами (не подтверждено). Для подтверждения завершите микрозадачу с этим навыком
+                            или пройдите квест от эксперта.
+                          </div>
+                          <SkillBadges slugs={declared} variant="neutral" />
+                        </div>
+                      )}
+                      {verified.length === 0 && declared.length === 0 && (
+                        <SkillBadges slugs={[]} />
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="profile-achievements">

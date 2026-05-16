@@ -5,6 +5,7 @@ export type UsersListParams = {
   page?: number;
   limit?: number;
   category?: string;
+  role?: string;
 };
 
 export type UserListItem = {
@@ -87,6 +88,7 @@ export const UsersAPI = {
           ...(params.category && params.category.trim()
             ? { category: params.category.trim() }
             : {}),
+          ...(params.role && params.role.trim() ? { role: params.role.trim() } : {}),
         },
       })
     );

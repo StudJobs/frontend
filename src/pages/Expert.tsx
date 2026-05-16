@@ -262,7 +262,7 @@ function StudentsTab() {
     setLoading(true);
     setError("");
     try {
-      const list = await UsersAPI.list({ page: 1, limit: 100 });
+      const list = await UsersAPI.list({ page: 1, limit: 100, role: "ROLE_STUDENT" });
       setStudents(list.profiles || []);
     } catch (e: any) {
       setError(e?.message || "Не удалось загрузить студентов");
