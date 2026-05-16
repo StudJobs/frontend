@@ -57,6 +57,9 @@ export type MicroTask = {
   assigned_to?: string;
   created_at?: string;
   updated_at?: string;
+  is_skill_quest?: boolean;
+  target_student_id?: string;
+  target_skill_slug?: string;
 };
 
 export type MicroTaskListResponse = {
@@ -78,6 +81,8 @@ export type Submission = {
   review_comment?: string;
   submitted_at?: string;
   reviewed_at?: string;
+  solution_file_name?: string;
+  solution_file_url?: string;
 };
 
 export type SubmissionListResponse = {
@@ -129,13 +134,42 @@ export const TasksAPI = {
     return data as MicroTask;
   },
 
-  async submit(id: string, payload: { solution_url: string; comment?: string }): Promise<Submission> {
+  async submit(id: string, payload: { solution_url?: string; comment?: string; solution_file_name?: string }): Promise<Submission> {
     const data = unwrap(await apiGateway({
       method: "POST",
       url: `/tasks/${encodeURIComponent(id)}/submit`,
       data: payload,
     }));
     return data as Submission;
+  },
+
+  async solutionUploadInit(taskId: string, fileName: string): Promise<{ file_id: string; upload_url: string }> {
+    const data = unwrap(await apiGateway({
+      method: "POST",
+      url: `/tasks/${encodeURIComponent(taskId)}/solution-upload-init`,
+      data: { file_name: fileName },
+    }));
+    return data as { file_id: string; upload_url: string };
+  },
+
+  async solutionUploadConfirm(taskId: string, fileId: string): Promise<void> {
+    await apiGateway({
+      method: "POST",
+      url: `/tasks/${encodeURIComponent(taskId)}/solution-upload-confirm`,
+      data: { file_id: fileId },
+    });
+  },
+
+  // Эксперт создаёт квест-задачу под конкретного студента и навык.
+  async createSkillQuest(payload: {
+    target_student_id: string;
+    target_skill_slug: string;
+    title: string;
+    description?: string;
+    deadline?: string;
+  }): Promise<MicroTask> {
+    const data = unwrap(await apiGateway({ method: "POST", url: "/expert/quests", data: payload }));
+    return data as MicroTask;
   },
 
   async listMySubmissions(): Promise<SubmissionListResponse> {

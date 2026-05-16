@@ -20,6 +20,7 @@ import {
 } from "../api/tasks";
 import { useToast } from "../components/ui/Toast";
 import { getCurrentUserId } from "../api/apiGateway";
+import { UsersAPI } from "../api/users";
 
 const DEFAULT_LIMIT = 9;
 const PAGE_SIZE_OPTIONS = [9, 15, 25, 50];
@@ -96,7 +97,20 @@ export default function Tasks() {
   const toast = useToast();
   const [actionMsg, setActionMsg] = useState("");
 
-  const myId = useMemo(() => getMyId(), []);
+  const [myId, setMyId] = useState<string>(() => getMyId());
+  useEffect(() => {
+    // JWT-decoded id может быть пустым (например, после ручного редактирования токена).
+    // Дёргаем /users/me как авторитативный источник и обновляем локальный id.
+    if (!isStudentRole(getMyRole())) return;
+    (async () => {
+      try {
+        const me = await UsersAPI.me();
+        if (me?.id) setMyId(me.id);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
   const myRole = useMemo(() => getMyRole(), []);
   const canApply = isStudentRole(myRole);
 

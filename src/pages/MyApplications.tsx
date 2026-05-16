@@ -21,8 +21,10 @@ import {
 import { apiGateway } from "../api/apiGateway";
 import { useToast } from "../components/ui/Toast";
 import SkillBadges from "../components/ui/SkillBadges";
+import ChatPanel from "../components/ui/ChatPanel";
+import { threadId as makeThreadId } from "../api/chat";
 
-type Tab = "vacancies" | "tasks";
+type Tab = "vacancies" | "tasks" | "quests";
 
 const money = (n?: number) =>
   typeof n === "number" && n > 0 ? `${new Intl.NumberFormat("ru-RU").format(n)} ₽` : "—";
@@ -69,6 +71,13 @@ export default function MyApplications() {
           >
             Микрозадачи
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("quests")}
+            className={tab === "quests" ? "chip chip--active" : "chip"}
+          >
+            Квесты от экспертов
+          </button>
         </div>
 
         <div style={{ marginBottom: 18 }}>
@@ -85,11 +94,9 @@ export default function MyApplications() {
           />
         </div>
 
-        {tab === "vacancies" ? (
-          <VacanciesTab q={qDebounced} toast={toast} />
-        ) : (
-          <TasksTab q={qDebounced} toast={toast} />
-        )}
+        {tab === "vacancies" && <VacanciesTab q={qDebounced} toast={toast} />}
+        {tab === "tasks" && <TasksTab q={qDebounced} toast={toast} kind="regular" />}
+        {tab === "quests" && <TasksTab q={qDebounced} toast={toast} kind="quest" />}
       </main>
       <Footer />
     </>
@@ -256,6 +263,8 @@ function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToa
                   </button>
                 </div>
               )}
+
+              <ChatPanel threadId={makeThreadId.application(a.id)} title="Чат с HR" collapsedDefault />
             </article>
           );
         })}
@@ -270,12 +279,13 @@ function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToa
 // microtask_id и привязываем к карточкам — у задачи может быть несколько
 // (rejected → новая попытка), показываем последнюю.
 
-function TasksTab({ q, toast: _toast }: { q: string; toast: ReturnType<typeof useToast> }) {
+function TasksTab({ q, toast, kind }: { q: string; toast: ReturnType<typeof useToast>; kind: "regular" | "quest" }) {
   const [tasks, setTasks] = useState<MicroTask[]>([]);
   const [subs, setSubs] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<number>(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -318,9 +328,10 @@ function TasksTab({ q, toast: _toast }: { q: string; toast: ReturnType<typeof us
   }, [subs]);
 
   const filtered = useMemo(() => {
+    const byKind = tasks.filter((t) => (kind === "quest" ? !!t.is_skill_quest : !t.is_skill_quest));
     const needle = q.trim().toLowerCase();
-    if (!needle) return tasks;
-    return tasks.filter((t) => {
+    if (!needle) return byKind;
+    return byKind.filter((t) => {
       const inTitle = t.title.toLowerCase().includes(needle);
       const inDesc = (t.description || "").toLowerCase().includes(needle);
       const sub = latestSubByTask.get(t.id);
@@ -329,7 +340,7 @@ function TasksTab({ q, toast: _toast }: { q: string; toast: ReturnType<typeof us
         : false;
       return inTitle || inDesc || inSol;
     });
-  }, [tasks, q, latestSubByTask]);
+  }, [tasks, q, latestSubByTask, kind]);
 
   const submissionPillClass = (s?: number) => {
     if (s === SUBMISSION_STATUS.PENDING) return "status-pill status-pill--1";
@@ -374,19 +385,31 @@ function TasksTab({ q, toast: _toast }: { q: string; toast: ReturnType<typeof us
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {filtered.map((t) => {
           const sub = latestSubByTask.get(t.id);
+          const isExpanded = expandedId === t.id;
+          const canSubmit =
+            t.status === TASK_STATUS.ASSIGNED && (!sub || sub.status === SUBMISSION_STATUS.REJECTED);
           return (
             <article key={t.id} className="application-card">
               <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                 <div>
-                  <Link to={`/tasks?task_id=${encodeURIComponent(t.id)}`} className="application-card__title">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                    className="application-card__title"
+                    style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, textAlign: "left" }}
+                  >
                     {t.title}
-                  </Link>
+                  </button>
                   <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
                     Награда: {money(t.reward)}
                     {t.deadline ? ` · Дедлайн ${t.deadline}` : ""}
                   </div>
                 </div>
-                <span className={`status-pill status-pill--${t.status === TASK_STATUS.COMPLETED ? 2 : t.status === TASK_STATUS.CANCELLED ? 3 : 1}`}>
+                <span
+                  className={`status-pill status-pill--${
+                    t.status === TASK_STATUS.COMPLETED ? 2 : t.status === TASK_STATUS.CANCELLED ? 3 : 1
+                  }`}
+                >
                   {taskStatusLabel(t.status)}
                 </span>
               </header>
@@ -397,7 +420,7 @@ function TasksTab({ q, toast: _toast }: { q: string; toast: ReturnType<typeof us
                 </div>
               )}
 
-              {t.description && (
+              {(isExpanded || !sub) && t.description && (
                 <div style={{ marginTop: 10 }}>
                   <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                     Описание
@@ -406,42 +429,163 @@ function TasksTab({ q, toast: _toast }: { q: string; toast: ReturnType<typeof us
                 </div>
               )}
 
-              {sub ? (
+              {sub && (
                 <div style={{ marginTop: 12, padding: "10px 12px", background: "var(--surface-soft)", borderRadius: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <div className="muted" style={{ fontSize: 12 }}>Моё решение</div>
+                    <div className="muted" style={{ fontSize: 12 }}>Моё последнее решение</div>
                     <span className={submissionPillClass(sub.status)}>
                       {submissionStatusLabel(sub.status)}
                     </span>
                   </div>
-                  {sub.solution_url && (
+                  {sub.solution_url && !sub.solution_url.startsWith("file://") && (
                     <div style={{ marginBottom: 4 }}>
                       <a className="link" href={sub.solution_url} target="_blank" rel="noopener noreferrer">
                         {sub.solution_url}
                       </a>
                     </div>
                   )}
+                  {sub.solution_file_url && (
+                    <div style={{ marginBottom: 4 }}>
+                      <a className="link" href={sub.solution_file_url} target="_blank" rel="noopener noreferrer">
+                        Файл: {sub.solution_file_name?.split("-").slice(1).join("-") || sub.solution_file_name}
+                      </a>
+                    </div>
+                  )}
                   {sub.comment && (
                     <div style={{ whiteSpace: "pre-wrap", marginBottom: 4 }}>{sub.comment}</div>
                   )}
-                  {sub.review_comment && (sub.status === SUBMISSION_STATUS.APPROVED || sub.status === SUBMISSION_STATUS.REJECTED) && (
-                    <div style={{ marginTop: 6 }}>
-                      <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>Комментарий ревьюера</div>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{sub.review_comment}</div>
-                    </div>
-                  )}
+                  {sub.review_comment &&
+                    (sub.status === SUBMISSION_STATUS.APPROVED || sub.status === SUBMISSION_STATUS.REJECTED) && (
+                      <div style={{ marginTop: 6 }}>
+                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                          Комментарий ревьюера
+                        </div>
+                        <div style={{ whiteSpace: "pre-wrap" }}>{sub.review_comment}</div>
+                      </div>
+                    )}
                 </div>
-              ) : t.status === TASK_STATUS.ASSIGNED ? (
+              )}
+
+              {isExpanded && canSubmit && (
+                <SubmitForm
+                  task={t}
+                  toast={toast}
+                  onDone={() => {
+                    setExpandedId(null);
+                    void load();
+                  }}
+                />
+              )}
+
+              {/* CTA: «Развернуть и загрузить решение» */}
+              {!isExpanded && canSubmit && (
                 <div style={{ marginTop: 12 }}>
-                  <Link to={`/tasks?task_id=${encodeURIComponent(t.id)}`} className="btn btn--ghost">
-                    Загрузить решение →
-                  </Link>
+                  <button type="button" className="btn btn--ghost" onClick={() => setExpandedId(t.id)}>
+                    {sub?.status === SUBMISSION_STATUS.REJECTED ? "Отправить новое решение" : "Загрузить решение"}
+                  </button>
                 </div>
-              ) : null}
+              )}
+
+              {isExpanded && (
+                <ChatPanel
+                  threadId={(t.is_skill_quest ? makeThreadId.quest(t.id) : makeThreadId.task(t.id))}
+                  title={t.is_skill_quest ? "Чат с экспертом" : "Чат с заказчиком"}
+                  collapsedDefault={false}
+                />
+              )}
             </article>
           );
         })}
       </div>
     </>
+  );
+}
+
+// Inline-форма submit для микрозадачи. Поля: URL + опц. файл + опц. комментарий.
+// Файл при наличии грузится через presigned PUT (B3); пока B3 не подключён,
+// поле disabled. URL обязателен.
+function SubmitForm({
+  task,
+  toast,
+  onDone,
+}: {
+  task: MicroTask;
+  toast: ReturnType<typeof useToast>;
+  onDone: () => void;
+}) {
+  const [url, setUrl] = useState("");
+  const [comment, setComment] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit() {
+    if (!url.trim() && !file) {
+      toast.danger("Укажите ссылку или прикрепите файл с решением");
+      return;
+    }
+    setBusy(true);
+    try {
+      let solutionUrl = url.trim();
+      let solutionFileName = "";
+      if (file) {
+        const init = await TasksAPI.solutionUploadInit(task.id, file.name);
+        await fetch(init.upload_url, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+        await TasksAPI.solutionUploadConfirm(task.id, init.file_id);
+        solutionFileName = file.name;
+        // Если URL не указан — используем имя файла как «человеческий» якорь.
+        if (!solutionUrl) solutionUrl = `file://${solutionFileName}`;
+      }
+      await TasksAPI.submit(task.id, {
+        solution_url: solutionUrl,
+        comment: comment.trim() || undefined,
+        solution_file_name: solutionFileName || undefined,
+      });
+      toast.success("Решение отправлено", "HR увидит его в очереди ревью.");
+      onDone();
+    } catch (e: any) {
+      toast.danger("Не удалось отправить решение", e?.message || "Проверьте поля и попробуйте снова.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 14, padding: 14, border: "1px solid var(--border)", borderRadius: 12 }}>
+      <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+        Новое решение
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <input
+          className="mj-vac-input"
+          placeholder="Ссылка на репозиторий / гист / результат"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
+        <label className="muted" style={{ fontSize: 12 }}>
+          Или файл (PDF/архив/изображение):
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            style={{ display: "block", marginTop: 4 }}
+          />
+        </label>
+        <textarea
+          className="mj-vac-input"
+          rows={3}
+          placeholder="Комментарий (необязательно): что важно знать ревьюеру"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" className="btn btn--primary" disabled={busy} onClick={handleSubmit}>
+            {busy ? "Отправка…" : "Отправить на ревью"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

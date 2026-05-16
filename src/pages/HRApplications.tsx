@@ -11,6 +11,8 @@ import {
 } from "../api/applications";
 import { apiGateway } from "../api/apiGateway";
 import { useToast } from "../components/ui/Toast";
+import ChatPanel from "../components/ui/ChatPanel";
+import { threadId as makeThreadId } from "../api/chat";
 
 // HR-доска: отклики на одну конкретную вакансию.
 // URL: /hr/applications?vacancy_id=...
@@ -214,6 +216,8 @@ export default function HRApplications() {
                         </button>
                       </div>
                     )}
+
+                    <ChatPanel threadId={makeThreadId.application(a.id)} title="Чат с кандидатом" collapsedDefault />
                   </article>
                 );
               })}

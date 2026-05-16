@@ -22,6 +22,8 @@ import {
   submissionStatusLabel,
 } from "../api/tasks";
 import { useToast } from "../components/ui/Toast";
+import ChatPanel from "../components/ui/ChatPanel";
+import { threadId as makeThreadId } from "../api/chat";
 
 const cardVariant = (i: number) => {
   const v = i % 3;
@@ -390,10 +392,16 @@ export default function HRTasks() {
                 ))}
               </div>
             )}
+
+            {/* Чат с автором задачи (студент-assigned видит этот же тред). */}
+            <ChatPanel
+              threadId={makeThreadId.task(activeTask.id)}
+              title="Чат со студентом"
+              collapsedDefault={false}
+            />
           </div>
         </div>
       ) : null}
-
       <Footer />
     </div>
   );
@@ -424,14 +432,28 @@ function SubmissionCard(props: {
             Отправлено: {submission.submitted_at || "—"} • Статус: {submissionStatusLabel(submission.status)}
           </div>
         </div>
-        <a
-          href={submission.solution_url}
-          target="_blank"
-          rel="noreferrer"
-          style={{ fontWeight: 800, textDecoration: "underline" }}
-        >
-          Открыть решение
-        </a>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+          {submission.solution_url && !submission.solution_url.startsWith("file://") && (
+            <a
+              href={submission.solution_url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontWeight: 800, textDecoration: "underline" }}
+            >
+              Открыть ссылку
+            </a>
+          )}
+          {submission.solution_file_url && (
+            <a
+              href={submission.solution_file_url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontWeight: 800, textDecoration: "underline" }}
+            >
+              Скачать файл ↗
+            </a>
+          )}
+        </div>
       </div>
 
       {submission.comment ? (

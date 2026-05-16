@@ -146,6 +146,8 @@ export default function Header() {
     } catch {
       /* noop */
     }
+    // Сбрасываем in-memory кэш /users/me — иначе следующий вход подцепит чужой id.
+    import("../../api/users").then(({ UsersAPI }) => UsersAPI.clearMeCache()).catch(() => {});
     setMenuOpen(false);
     navigate("/auth", { replace: true });
   }

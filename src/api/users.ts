@@ -26,6 +26,7 @@ export type UserListItem = {
   resume_id?: string;
 
   skill_slugs?: string[];
+  verified_skill_slugs?: string[];
   role?: string;
 };
 
@@ -40,7 +41,41 @@ export type UsersListResponse = {
 
 const unwrap = (resp: any) => resp?.data ?? resp ?? {};
 
+// Кэш для UsersAPI.me() — внутри одной сессии не дёргаем сетевой запрос повторно.
+let _meCache: { id: string; profile?: UserListItem } | null = null;
+
 export const UsersAPI = {
+  // Возвращает профиль текущего пользователя по токену.
+  // Использует /users/me для STUDENT/DEVELOPER, /hr/me для HR, /company/me для COMPANY.
+  // Минимально нужно поле id — для сверки «эта запись принадлежит мне».
+  async me(force = false): Promise<{ id: string; profile?: UserListItem } | null> {
+    if (!force && _meCache) return _meCache;
+    const role = (typeof window !== "undefined" ? localStorage.getItem("role") || "" : "").toUpperCase();
+    const candidates: string[] = [];
+    if (role.includes("STUDENT") || role.includes("DEVELOPER")) candidates.push("/users/me");
+    if (role.includes("HR") || role.includes("COMPANY")) candidates.push("/hr/me");
+    if (role.includes("EXPERT")) candidates.push("/users/me", "/hr/me");
+    if (candidates.length === 0) candidates.push("/users/me", "/hr/me");
+    for (const url of candidates) {
+      try {
+        const data = unwrap(await apiGateway({ method: "GET", url }));
+        const id = String(data?.id || data?.user_id || data?.profile?.id || "");
+        if (id) {
+          _meCache = { id, profile: data as UserListItem };
+          return _meCache;
+        }
+      } catch {
+        // 401/403 — пробуем следующий
+      }
+    }
+    return null;
+  },
+
+  // Сбрасывает кэш — вызвать на logout.
+  clearMeCache(): void {
+    _meCache = null;
+  },
+
   async list(params: UsersListParams): Promise<UsersListResponse> {
     const data = unwrap(
       await apiGateway({
