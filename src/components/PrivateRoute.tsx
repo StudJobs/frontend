@@ -88,7 +88,12 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
 
   if (userRole === "ROLE_EXPERT") {
     const p = location.pathname;
-    const ok = p === "/expert" || p.startsWith("/expert/");
+    const ok =
+      p === "/expert" ||
+      p.startsWith("/expert/") ||
+      p === "/expert-profile" ||
+      p.startsWith("/expert-profile/") ||
+      p.startsWith("/u/"); // публичные профили студентов эксперту тоже нужны
     if (!ok) {
       return <Navigate to="/expert" replace />;
     }
