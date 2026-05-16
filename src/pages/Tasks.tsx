@@ -19,6 +19,7 @@ import {
   taskStatusLabel,
 } from "../api/tasks";
 import { useToast } from "../components/ui/Toast";
+import { getCurrentUserId } from "../api/apiGateway";
 
 const DEFAULT_LIMIT = 9;
 const PAGE_SIZE_OPTIONS = [9, 15, 25, 50];
@@ -55,16 +56,7 @@ const money = (n?: number) =>
     ? `${new Intl.NumberFormat("ru-RU").format(n)} ₽`
     : "—";
 
-const getMyId = (): string => {
-  try {
-    const raw = localStorage.getItem("user") || localStorage.getItem("me");
-    if (!raw) return "";
-    const obj = JSON.parse(raw);
-    return obj?.id || obj?.user_id || "";
-  } catch {
-    return "";
-  }
-};
+const getMyId = (): string => getCurrentUserId();
 
 const isStudentRole = (role?: string) => {
   const r = String(role || "").toUpperCase();
@@ -142,6 +134,23 @@ export default function Tasks() {
 
   useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Если в URL пришёл ?task_id=... (например, из «Мои отклики»), открываем модалку
+  // конкретной задачи. Подгружаем её отдельным Get, чтобы не зависеть от текущей выдачи.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get("task_id");
+    if (!taskId) return;
+    (async () => {
+      try {
+        const t = await TasksAPI.get(taskId);
+        if (t && t.id) setSelected(t);
+      } catch {
+        // ignore — задачу могли удалить
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

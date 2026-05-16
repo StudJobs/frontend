@@ -10,6 +10,25 @@ export interface ApiRequestOptions {
 
 const API_GATEWAY_URL = import.meta.env.VITE_API_URL || "/api/v1";
 
+// Декодирует payload JWT (без проверки подписи — нужен только sub для UI-логики:
+// «эта запись принадлежит мне или нет»). Все security-чеки делает бэк.
+export function getCurrentUserId(): string {
+  try {
+    const token = typeof window !== "undefined" ? window.localStorage.getItem("token") : null;
+    if (!token) return "";
+    const parts = token.split(".");
+    if (parts.length !== 3) return "";
+    // base64url -> base64
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4 ? b64 + "=".repeat(4 - (b64.length % 4)) : b64;
+    const json = atob(pad);
+    const obj = JSON.parse(json);
+    return String(obj?.sub || obj?.user_id || obj?.id || "");
+  } catch {
+    return "";
+  }
+}
+
 export async function apiGateway<T = any>(
   options: ApiRequestOptions
 ): Promise<T> {

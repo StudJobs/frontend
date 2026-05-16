@@ -144,6 +144,15 @@ export const TasksAPI = {
     return data as SubmissionListResponse;
   },
 
+  // Микрозадачи, которые текущий студент взял (ASSIGNED + COMPLETED).
+  // status=0 — все, status=2 — в работе, status=3 — завершённые.
+  async listMyAssigned(params?: { page?: number; limit?: number; status?: number }): Promise<MicroTaskListResponse> {
+    const data = unwrap(await apiGateway({ method: "GET", url: "/tasks/mine", params }));
+    if (Array.isArray(data?.tasks)) return data as MicroTaskListResponse;
+    if (Array.isArray(data)) return { tasks: data };
+    return data as MicroTaskListResponse;
+  },
+
   // HR-операции
   async listMine(): Promise<MicroTaskListResponse> {
     const data = unwrap(await apiGateway({ method: "GET", url: "/hr/tasks/" }));
