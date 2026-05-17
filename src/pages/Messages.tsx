@@ -16,6 +16,7 @@ export default function Messages() {
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [activeId, setActiveId] = useState<string>(initialThread);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [accessError, setAccessError] = useState<string>("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const myId = useRef<string>(getCurrentUserId());
@@ -40,14 +41,26 @@ export default function Messages() {
     }
   }
 
-  async function loadMessages(threadID: string) {
+  async function loadMessages(threadID: string): Promise<boolean> {
+    const parts = threadID.split(":");
+    if (parts.length !== 2) return false;
     try {
-      const parts = threadID.split(":");
-      if (parts.length !== 2) return;
       const res = await ChatAPI.list(parts[0] as ThreadKind, parts[1], { limit: 100 });
       setMessages(res.messages);
-    } catch {
+      setAccessError("");
+      return true;
+    } catch (e: any) {
+      const msg = String(e?.error || e?.message || "").toLowerCase();
+      if (msg.includes("participant") || msg.includes("forbidden") || msg.includes("not found")) {
+        setAccessError(
+          "У вас нет доступа к этому диалогу. Возможно, вы не участник отклика/задачи, " +
+            "либо ваша заявка в компанию ещё не одобрена."
+        );
+        setMessages([]);
+        return false; // прекращаем polling
+      }
       setMessages([]);
+      return true; // сетевая ошибка — продолжаем попытки
     }
   }
 
@@ -58,9 +71,19 @@ export default function Messages() {
 
   useEffect(() => {
     if (!activeId) return;
-    void loadMessages(activeId);
-    const t = window.setInterval(() => void loadMessages(activeId), 5000);
-    return () => window.clearInterval(t);
+    setAccessError("");
+    let cancelled = false;
+    let timer: number | null = null;
+    const tick = async () => {
+      const ok = await loadMessages(activeId);
+      if (cancelled || !ok) return;
+      timer = window.setTimeout(tick, 5000);
+    };
+    void tick();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, [activeId]);
 
   useEffect(() => {
@@ -201,7 +224,7 @@ export default function Messages() {
               overflow: "hidden",
             }}
           >
-            {!active ? (
+            {!activeId ? (
               <div className="empty-state" style={{ margin: "auto" }}>
                 <p>Выберите диалог слева.</p>
               </div>
@@ -219,15 +242,16 @@ export default function Messages() {
                 >
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 16, fontFamily: "var(--font-display)" }}>
-                      {active.peer_name || "Собеседник"}
+                      {active?.peer_name || "Собеседник"}
                     </div>
                     <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                      {active.peer_role || ""}
-                      {active.peer_company ? ` · ${active.peer_company}` : ""}
-                      {active.context_title ? ` · ${kindLabel(active.kind)}: «${active.context_title}»` : ""}
+                      {active?.peer_role || ""}
+                      {active?.peer_company ? ` · ${active.peer_company}` : ""}
+                      {active?.context_title ? ` · ${kindLabel(active?.kind)}: «${active.context_title}»` : ""}
+                      {!active && activeId.includes(":") && `Диалог: ${activeId}`}
                     </div>
                   </div>
-                  {active.peer_id && (
+                  {active?.peer_id && (
                     <Link to={`/u/${encodeURIComponent(active.peer_id)}`} className="btn btn--ghost">
                       Профиль →
                     </Link>
@@ -246,7 +270,24 @@ export default function Messages() {
                     background: "var(--surface-soft)",
                   }}
                 >
-                  {messages.length === 0 && (
+                  {accessError && (
+                    <div
+                      style={{
+                        margin: "auto",
+                        maxWidth: 460,
+                        padding: 14,
+                        background: "var(--danger-soft)",
+                        border: "1px solid var(--danger)",
+                        borderRadius: 10,
+                        color: "var(--danger)",
+                        fontSize: 13,
+                        textAlign: "center",
+                      }}
+                    >
+                      {accessError}
+                    </div>
+                  )}
+                  {!accessError && messages.length === 0 && (
                     <div className="muted" style={{ fontSize: 12, textAlign: "center", marginTop: 24 }}>
                       Сообщений ещё нет — напишите первое.
                     </div>
@@ -274,6 +315,7 @@ export default function Messages() {
                   })}
                 </div>
 
+                {!accessError && (
                 <div
                   style={{
                     padding: 10,
@@ -299,6 +341,7 @@ export default function Messages() {
                     {sending ? "…" : "Отправить"}
                   </button>
                 </div>
+                )}
               </>
             )}
           </section>
