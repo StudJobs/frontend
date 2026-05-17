@@ -269,7 +269,15 @@ function CompanyPicker({
 
   const filtered = useMemo(() => {
     const used = new Set(alreadyIds.map(String));
-    return (items || []).filter((c) => !used.has(String(c.id || "")));
+    return (items || []).filter((c) => {
+      if (used.has(String(c.id || ""))) return false;
+      // Прячем company-stubs: auto-created при регистрации COMPANY_OWNER
+      // с дефолтным name = "Без названия". Owner ещё не заполнил профиль —
+      // в каталог такие компании не пускаем.
+      const name = String(c.name || "").trim().toLowerCase();
+      if (!name || name === "без названия" || name === "new") return false;
+      return true;
+    });
   }, [items, alreadyIds]);
 
   useEffect(() => {
