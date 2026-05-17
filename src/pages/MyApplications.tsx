@@ -114,12 +114,16 @@ function useDebounced<T>(value: T, ms: number): T {
 
 type VacancyMini = { id: string; title: string };
 
+const PAGE_SIZES = [9, 15, 25, 50];
+
 function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToast> }) {
   const [items, setItems] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 0>(0);
   const [vacancyTitles, setVacancyTitles] = useState<Record<string, string>>({});
+  const [pageSize, setPageSize] = useState<number>(9);
+  const [page, setPage] = useState<number>(1);
 
   async function load() {
     setLoading(true);
@@ -185,6 +189,17 @@ function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToa
     });
   }, [items, q, vacancyTitles]);
 
+  // Пагинация поверх отфильтрованного.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, safePage, pageSize]
+  );
+  useEffect(() => {
+    setPage(1); // сброс на 1 при смене поиска или статуса
+  }, [q, statusFilter, pageSize]);
+
   return (
     <>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
@@ -214,8 +229,19 @@ function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToa
         </div>
       )}
 
+      {!loading && !error && filtered.length > 0 && (
+        <Pagination
+          total={filtered.length}
+          page={safePage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPage={setPage}
+          onPageSize={setPageSize}
+        />
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {filtered.map((a) => {
+        {pageItems.map((a) => {
           const title = vacancyTitles[a.vacancy_id] ?? "Вакансия";
           return (
             <article key={a.id} className="application-card">
@@ -288,6 +314,8 @@ function TasksTab({ q, toast, kind }: { q: string; toast: ReturnType<typeof useT
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<number>(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<number>(9);
+  const [page, setPage] = useState<number>(1);
 
   async function load() {
     setLoading(true);
@@ -344,6 +372,16 @@ function TasksTab({ q, toast, kind }: { q: string; toast: ReturnType<typeof useT
     });
   }, [tasks, q, latestSubByTask, kind]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, safePage, pageSize]
+  );
+  useEffect(() => {
+    setPage(1);
+  }, [q, statusFilter, pageSize, kind]);
+
   const submissionPillClass = (s?: number) => {
     if (s === SUBMISSION_STATUS.PENDING) return "status-pill status-pill--1";
     if (s === SUBMISSION_STATUS.APPROVED) return "status-pill status-pill--2";
@@ -384,8 +422,19 @@ function TasksTab({ q, toast, kind }: { q: string; toast: ReturnType<typeof useT
         </div>
       )}
 
+      {!loading && !error && filtered.length > 0 && (
+        <Pagination
+          total={filtered.length}
+          page={safePage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPage={setPage}
+          onPageSize={setPageSize}
+        />
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {filtered.map((t) => {
+        {pageItems.map((t) => {
           const sub = latestSubByTask.get(t.id);
           const isExpanded = expandedId === t.id;
           const canSubmit =
@@ -591,6 +640,76 @@ function SubmitForm({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function Pagination({
+  total,
+  page,
+  pageSize,
+  totalPages,
+  onPage,
+  onPageSize,
+}: {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  onPage: (n: number) => void;
+  onPageSize: (n: number) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 12,
+        padding: "8px 0",
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        color: "var(--ink-muted)",
+      }}
+    >
+      <span>Найдено: <strong style={{ color: "var(--ink)" }}>{total}</strong></span>
+      <span>·</span>
+      <span>
+        Стр. <strong style={{ color: "var(--ink)" }}>{page}</strong>/{totalPages}
+      </span>
+      <span>·</span>
+      <label>
+        По{" "}
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSize(Number(e.target.value) || 9)}
+          style={{ marginLeft: 4 }}
+        >
+          {PAGE_SIZES.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span style={{ marginLeft: "auto", display: "inline-flex", gap: 4 }}>
+        <button type="button" className="btn btn--ghost" disabled={page <= 1} onClick={() => onPage(1)}>
+          «
+        </button>
+        <button type="button" className="btn btn--ghost" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          ‹
+        </button>
+        <button type="button" className="btn btn--ghost" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+          ›
+        </button>
+        <button type="button" className="btn btn--ghost" disabled={page >= totalPages} onClick={() => onPage(totalPages)}>
+          »
+        </button>
+      </span>
     </div>
   );
 }

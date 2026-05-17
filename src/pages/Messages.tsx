@@ -164,6 +164,24 @@ export default function Messages() {
     return "Тред";
   }
 
+  // Понятное имя треда для шапки списка слева и right header.
+  // peer_name пуст когда тред «новый» и собеседник ещё не определён (например,
+  // HR не назначен на отклик). Подставляем контекстный fallback.
+  function threadTitle(t: ChatThread | undefined): string {
+    if (!t) return "Собеседник";
+    if (t.peer_name) return t.peer_name;
+    const ctx = t.context_title || kindLabel(t.kind);
+    switch (t.kind) {
+      case "application":
+        return `Кандидат · ${ctx}`;
+      case "task":
+        return `Заказчик · ${ctx}`;
+      case "quest":
+        return `Эксперт · ${ctx}`;
+    }
+    return ctx;
+  }
+
   return (
     <>
       <Header />
@@ -219,7 +237,7 @@ export default function Messages() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>
-                        {t.peer_name || "Собеседник"}
+                        {threadTitle(t)}
                       </div>
                       <div className="muted" style={{ fontSize: 11 }}>
                         {t.last_at ? new Date(t.last_at).toLocaleDateString() : ""}
@@ -277,7 +295,7 @@ export default function Messages() {
                 >
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 16, fontFamily: "var(--font-display)" }}>
-                      {active?.peer_name || "Собеседник"}
+                      {threadTitle(active)}
                     </div>
                     <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
                       {active?.peer_role || ""}

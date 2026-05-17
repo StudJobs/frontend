@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { ChatAPI } from "../../api/chat";
+import { ApplicationsAPI } from "../../api/applications";
+import { TasksAPI, SUBMISSION_STATUS } from "../../api/tasks";
+import { getCurrentUserId } from "../../api/apiGateway";
 
 /* ============================================================================
    NotificationsBell — mock-уведомления с потенциалом
@@ -26,6 +30,119 @@ export interface SjNotification {
   ts: string;     // ISO timestamp
   read: boolean;
   link?: string;
+}
+
+// LAST_SEEN_KEY — момент когда юзер последний раз открывал уведомления.
+// События с ts > last_seen и не "моими" считаются непрочитанными.
+const LAST_SEEN_KEY = "sj_notif_last_seen";
+
+function getLastSeen(): number {
+  const v = localStorage.getItem(LAST_SEEN_KEY);
+  const t = v ? Date.parse(v) : 0;
+  return Number.isFinite(t) && t > 0 ? t : 0;
+}
+
+function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => void } {
+  const [items, setItems] = useState<SjNotification[]>([]);
+
+  async function tick() {
+    const role = localStorage.getItem("role") || "";
+    const me = getCurrentUserId();
+    const lastSeen = getLastSeen();
+    const acc: SjNotification[] = [];
+
+    // 1) Чаты: последние сообщения от собеседника.
+    try {
+      const threads = await ChatAPI.listThreads();
+      for (const t of threads) {
+        if (!t.last_at || !t.last_message) continue;
+        const ts = Date.parse(t.last_at);
+        if (!ts) continue;
+        const isUnread = ts > lastSeen;
+        acc.push({
+          id: "chat-" + t.thread_id,
+          kind: "system",
+          title: `Сообщение от ${t.peer_name || "собеседника"}`,
+          body: t.last_message.slice(0, 120),
+          ts: t.last_at,
+          read: !isUnread,
+          link: "/messages?thread=" + encodeURIComponent(t.thread_id),
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    // 2) Для студента — изменения статусов своих откликов.
+    if (role === "ROLE_STUDENT") {
+      try {
+        const apps = await ApplicationsAPI.listMine({ limit: 50 });
+        for (const a of apps.applications) {
+          if (a.status === 1) continue; // PENDING — не уведомляем
+          const ts = Date.parse(a.updated_at || a.created_at || "");
+          if (!ts) continue;
+          acc.push({
+            id: "app-" + a.id,
+            kind: "application_status",
+            title: a.status === 2 ? "Отклик принят" : "Отклик отклонён",
+            body: a.hr_comment || "",
+            ts: a.updated_at || a.created_at,
+            read: ts <= lastSeen,
+            link: "/my/applications",
+          });
+        }
+      } catch {
+        // ignore
+      }
+
+      // submission'ы (статусы решений микрозадач).
+      try {
+        const subs = await TasksAPI.listMySubmissions();
+        for (const s of subs.submissions || []) {
+          if (s.status === SUBMISSION_STATUS.PENDING) continue;
+          const ts = Date.parse(s.reviewed_at || s.submitted_at || "");
+          if (!ts) continue;
+          acc.push({
+            id: "sub-" + s.id,
+            kind: "microtask_review",
+            title:
+              s.status === SUBMISSION_STATUS.APPROVED
+                ? "Микрозадача принята"
+                : "Микрозадача отклонена",
+            body: s.review_comment || "",
+            ts: s.reviewed_at || s.submitted_at,
+            read: ts <= lastSeen,
+            link: "/my/applications",
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // De-dup по id + сортировка свежее сверху.
+    const map = new Map<string, SjNotification>();
+    for (const n of acc) map.set(n.id, n);
+    const sorted = [...map.values()].sort(
+      (a, b) => Date.parse(b.ts) - Date.parse(a.ts)
+    );
+    setItems(sorted.slice(0, 30));
+    void me; // suppress unused
+  }
+
+  useEffect(() => {
+    void tick();
+    const i = window.setInterval(() => void tick(), 30_000);
+    return () => window.clearInterval(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function markAllRead() {
+    localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
+    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  return { items, markAllRead };
 }
 
 function useMockNotifications(): {
@@ -130,16 +247,19 @@ const KIND_LABEL: Record<NotifKind, string> = {
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { items, markAllRead } = useMockNotifications();
+  const { items, markAllRead } = useLiveNotifications();
   const unread = items.filter((n) => !n.read).length;
 
   useEffect(() => {
     if (!open) return;
+    // Открыли панель — считаем что юзер всё увидел.
+    markAllRead();
     const onDoc = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   return (
@@ -198,7 +318,7 @@ export default function NotificationsBell() {
           )}
 
           <div className="sj-bell__footer">
-            <span className="mono subtle">demo · бэк-эндпоинт в плане</span>
+            <span className="mono subtle">обновляется каждые 30 секунд</span>
           </div>
         </div>
       )}
