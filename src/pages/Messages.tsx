@@ -5,6 +5,7 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { ChatAPI, ChatMessage, ChatThread, ThreadKind } from "../api/chat";
 import { getCurrentUserId } from "../api/apiGateway";
+import { UsersAPI } from "../api/users";
 
 // Двухколоночный inbox а-ля hh.ru: слева список тредов, справа активная переписка.
 // Polling сообщений активного треда каждые 5 секунд (без WS).
@@ -19,10 +20,38 @@ export default function Messages() {
   const [accessError, setAccessError] = useState<string>("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
-  const myId = useRef<string>(getCurrentUserId());
+  const [myId, setMyId] = useState<string>(() => getCurrentUserId());
+  // JWT-парсер достаёт user_uuid; но для пущей надёжности после mount тянем
+  // /users/me — это авторитативный id, не зависит от формата payload.
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await UsersAPI.me();
+        if (me?.id) setMyId(me.id);
+      } catch {
+        /* keep JWT-parsed id */
+      }
+    })();
+  }, []);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const active = useMemo(() => threads.find((t) => t.thread_id === activeId), [threads, activeId]);
+  // Если активный тред пришёл по URL и его нет в списке от бэка — рендерим как
+  // временный «локальный» элемент: юзер сразу видит вход в этот диалог в левой
+  // колонке, не приходится ждать пока бэк его подтянет.
+  const displayThreads = useMemo<ChatThread[]>(() => {
+    if (!activeId || threads.some((t) => t.thread_id === activeId)) return threads;
+    const parts = activeId.split(":");
+    return [
+      {
+        thread_id: activeId,
+        kind: parts[0],
+        resource_id: parts[1] || "",
+      } as ChatThread,
+      ...threads,
+    ];
+  }, [threads, activeId]);
+
+  const active = useMemo(() => displayThreads.find((t) => t.thread_id === activeId), [displayThreads, activeId]);
 
   async function loadThreads() {
     setLoadingThreads(true);
@@ -102,14 +131,20 @@ export default function Messages() {
       const m = await ChatAPI.send(parts[0] as ThreadKind, parts[1], body);
       setMessages((prev) => [...prev, m]);
       setText("");
-      // Обновляем preview в списке тредов.
-      setThreads((arr) =>
-        arr.map((t) =>
+      // Обновляем preview в списке тредов; если треда ещё нет — перезагружаем
+      // полный список (после первой отправки бэк сможет вернуть его через fallback).
+      setThreads((arr) => {
+        if (!arr.some((t) => t.thread_id === activeId)) {
+          // тред появится после reloadThreads — здесь возвращаем как есть
+          return arr;
+        }
+        return arr.map((t) =>
           t.thread_id === activeId
             ? { ...t, last_message: m.body, last_at: m.created_at }
             : t
-        )
-      );
+        );
+      });
+      void loadThreads();
     } catch {
       // empty
     } finally {
@@ -155,16 +190,16 @@ export default function Messages() {
             }}
           >
             <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontWeight: 700 }}>
-              Диалоги {loadingThreads ? "…" : `(${threads.length})`}
+              Диалоги {loadingThreads ? "…" : `(${displayThreads.length})`}
             </div>
             <div style={{ overflowY: "auto", flex: 1 }}>
-              {threads.length === 0 && !loadingThreads && (
+              {displayThreads.length === 0 && !loadingThreads && (
                 <div className="muted" style={{ padding: 14, fontSize: 13 }}>
                   Пока нет диалогов. Откройте отклик или задачу и напишите первое сообщение —
                   тред появится здесь у обоих собеседников.
                 </div>
               )}
-              {threads.map((t) => {
+              {displayThreads.map((t) => {
                 const isActive = t.thread_id === activeId;
                 return (
                   <button
@@ -293,7 +328,7 @@ export default function Messages() {
                     </div>
                   )}
                   {messages.map((m) => {
-                    const mine = m.from_user_id === myId.current;
+                    const mine = m.from_user_id === myId;
                     return (
                       <div
                         key={m.id}

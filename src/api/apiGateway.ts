@@ -23,7 +23,9 @@ export function getCurrentUserId(): string {
     const pad = b64.length % 4 ? b64 + "=".repeat(4 - (b64.length % 4)) : b64;
     const json = atob(pad);
     const obj = JSON.parse(json);
-    return String(obj?.sub || obj?.user_id || obj?.id || "");
+    // Наш Auth-сервис кладёт user_uuid в payload; sub/user_id/id — fallback'и
+    // для совместимости с возможной сменой формата.
+    return String(obj?.user_uuid || obj?.sub || obj?.user_id || obj?.id || "");
   } catch {
     return "";
   }
