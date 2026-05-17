@@ -4,7 +4,7 @@ import "../assets/styles/global.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import { MembershipAPI, VacancyModerationAPI } from "../api/membership";
-import { CompanyMember } from "../api/users";
+import { CompanyMember, UsersAPI } from "../api/users";
 import { VacanciesAPI, VacancyItem } from "../api/vacancies";
 import { useToast } from "../components/ui/Toast";
 import { getCurrentUserId } from "../api/apiGateway";
@@ -17,6 +17,38 @@ export default function CompanyAdmin() {
   const [vacancies, setVacancies] = useState<VacancyItem[]>([]);
   const [loading, setLoading] = useState(false);
   const myId = getCurrentUserId();
+  // userID → отображаемое имя. Раньше в карточках HR/автор вакансии показывался
+  // UUID-префикс — owner не мог соотнести строку со своим сотрудником. Тянем
+  // имена батчем через /users/:id (бэк уже отдаёт first_name/last_name/email).
+  const [nameMap, setNameMap] = useState<Record<string, string>>({});
+
+  function displayUser(uid?: string): string {
+    if (!uid) return "—";
+    if (nameMap[uid]) return nameMap[uid];
+    return uid.slice(0, 8) + "…";
+  }
+
+  async function resolveNames(ids: string[]) {
+    const unique = Array.from(new Set(ids.filter(Boolean)));
+    const missing = unique.filter((id) => !nameMap[id]);
+    if (missing.length === 0) return;
+    const updates: Record<string, string> = {};
+    await Promise.all(
+      missing.map(async (id) => {
+        try {
+          const u = await UsersAPI.get(id);
+          if (!u) return;
+          const name = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
+          updates[id] = name || u.email || id.slice(0, 8) + "…";
+        } catch {
+          /* оставим UUID-префикс как fallback */
+        }
+      })
+    );
+    if (Object.keys(updates).length > 0) {
+      setNameMap((prev) => ({ ...prev, ...updates }));
+    }
+  }
 
   async function loadMembers() {
     try {
@@ -49,6 +81,16 @@ export default function CompanyAdmin() {
     void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Резолвим имена для всех user_id, что появились в members + author_id вакансий.
+  useEffect(() => {
+    const ids = [
+      ...members.map((m) => m.user_id),
+      ...vacancies.map((v) => v.author_id || ""),
+    ];
+    void resolveNames(ids);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members, vacancies]);
 
   async function reviewMember(m: CompanyMember, status: 2 | 3) {
     try {
@@ -98,7 +140,7 @@ export default function CompanyAdmin() {
                 <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: 10, background: "var(--surface-soft)", borderRadius: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>
-                      HR <Link className="link" to={`/u/${encodeURIComponent(m.user_id)}`}>{m.user_id.slice(0, 8)}…</Link>
+                      <Link className="link" to={`/u/${encodeURIComponent(m.user_id)}`}>{displayUser(m.user_id)}</Link>
                     </div>
                     {m.note && <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{m.note}</div>}
                     {m.created_at && (
@@ -126,7 +168,7 @@ export default function CompanyAdmin() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {approvedMembers.map((m) => (
                 <div key={m.id} style={{ padding: "6px 10px", background: "var(--surface-soft)", borderRadius: 6 }}>
-                  <Link className="link" to={`/u/${encodeURIComponent(m.user_id)}`}>{m.user_id}</Link>
+                  <Link className="link" to={`/u/${encodeURIComponent(m.user_id)}`}>{displayUser(m.user_id)}</Link>
                 </div>
               ))}
             </div>
@@ -149,7 +191,7 @@ export default function CompanyAdmin() {
                         ЗП от {v.min_salary || v.salary || 0} ₽ · {v.work_format || "—"} · {v.schedule || "—"}
                       </div>
                       <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                        Автор: <Link className="link" to={`/u/${encodeURIComponent(v.author_id || "")}`}>{(v.author_id || "").slice(0, 8)}…</Link>
+                        Автор: <Link className="link" to={`/u/${encodeURIComponent(v.author_id || "")}`}>{displayUser(v.author_id)}</Link>
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -170,7 +212,7 @@ export default function CompanyAdmin() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {publishedHRVacancies.map((v) => (
                 <div key={v.id} style={{ padding: "6px 10px", background: "var(--surface-soft)", borderRadius: 6 }}>
-                  <strong>{v.title}</strong> · автор {(v.author_id || "").slice(0, 8)}…
+                  <strong>{v.title}</strong> · автор {displayUser(v.author_id)}
                 </div>
               ))}
             </div>
