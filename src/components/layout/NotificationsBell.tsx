@@ -3,6 +3,7 @@ import { ChatAPI } from "../../api/chat";
 import { ApplicationsAPI } from "../../api/applications";
 import { TasksAPI, SUBMISSION_STATUS, TASK_STATUS } from "../../api/tasks";
 import { VacanciesAPI } from "../../api/vacancies";
+import { MembershipAPI } from "../../api/membership";
 import { getCurrentUserId } from "../../api/apiGateway";
 
 /* ============================================================================
@@ -56,6 +57,17 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
 
     // 1) Чаты: последние сообщения от собеседника. Своих не показываем —
     // ты сам только что отправил, не нужно тебе об этом напоминать.
+    //
+    // FIXME(notifications-realtime): сейчас опрашиваем ChatAPI.listThreads()
+    // на каждый tick колокольчика (interval, см. ниже). Это «работает», но:
+    //   — задержка до 5–10 сек;
+    //   — N+1 на каждого пользователя при росте тредов;
+    //   — нет события «прислали DM пока ты не на сайте».
+    // Хорошее решение: вынести шину сообщений в Kafka (или Redis Pub/Sub),
+    // в API-Gateway повесить SSE/WS-эндпоинт `/notifications/stream`, бэкенд
+    // Chat-сервиса публикует событие при INSERT в chat_messages — клиент
+    // подписывается на свой канал по userID и получает push мгновенно.
+    // Решение отложено по решению автора (диплом-MVP) — вернёмся, когда даст добро.
     try {
       const threads = await ChatAPI.listThreads();
       for (const t of threads) {
@@ -213,6 +225,56 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
           localStorage.setItem(cacheKey, JSON.stringify(next));
         } catch {
           // ignore quota
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // 3) Для HR/EMPLOYER — статусы membership-заявок в компании.
+    // Owner одобрил или отклонил — HR должен это увидеть в шторке колокольчика.
+    // Кэш по membership_id в localStorage, уведомление приходит при смене статуса.
+    if (role === "ROLE_EMPLOYER") {
+      try {
+        const mem = await MembershipAPI.my();
+        if (mem && mem.id) {
+          const cacheKey = "sj_membership_status_cache";
+          let prev = "";
+          try {
+            prev = localStorage.getItem(cacheKey + ":" + mem.id) || "";
+          } catch {
+            /* ignore */
+          }
+          const curStatus = String(mem.status || 0);
+          // 2 = APPROVED, 3 = REJECTED. PENDING (1) — без уведомления.
+          if ((mem.status === 2 || mem.status === 3) && prev !== curStatus) {
+            const approved = mem.status === 2;
+            acc.push({
+              id: "membership-" + mem.id + "-" + curStatus,
+              kind: "system",
+              title: approved
+                ? "Заявка в компанию одобрена"
+                : "Заявка в компанию отклонена",
+              body: approved
+                ? "Теперь вы можете создавать вакансии и микрозадачи от имени компании."
+                : "Свяжитесь с владельцем компании или подайте новую заявку.",
+              ts: mem.reviewed_at || new Date().toISOString(),
+              read: false,
+              link: "/hr-membership",
+            });
+            try {
+              localStorage.setItem(cacheKey + ":" + mem.id, curStatus);
+            } catch {
+              /* ignore */
+            }
+          } else if (!prev) {
+            // первый просмотр — сохраняем чтобы не «зарядить» уведомление на нескольких тиках
+            try {
+              localStorage.setItem(cacheKey + ":" + mem.id, curStatus);
+            } catch {
+              /* ignore */
+            }
+          }
         }
       } catch {
         // ignore
