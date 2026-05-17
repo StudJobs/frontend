@@ -213,6 +213,16 @@ async function fetchMyVacancies(): Promise<VacancyItem[]> {
   return list.map(normalizeVacancy);
 }
 
+// Достаёт человекочитаемое сообщение об ошибке из ответа бэка. Раньше показывали
+// `r.text || "unknown"`, но для 4xx бэк отдаёт JSON {code, message} и r.text был
+// пустым — юзер видел дезу «(400): unknown» вместо причины.
+function extractErrMessage(r: { data?: any; text?: string; status: number }): string {
+  const d: any = r.data;
+  const msg =
+    d?.message ?? d?.error ?? d?.data?.message ?? d?.data?.error ?? r.text ?? "";
+  return msg ? String(msg) : `HTTP ${r.status}`;
+}
+
 async function createVacancy(payload: {
   title: string;
   salary?: number;
@@ -223,32 +233,25 @@ async function createVacancy(payload: {
   company_id: string;
 }): Promise<{ id: string; raw: any }> {
   const url = `/api/v1/hr/vacancy`;
-  const bodies = [payload, { request: payload }];
+  // Только raw payload — Gateway BodyParser ждёт плоскую models.Vacancy.
+  // Старый fallback `{ request: payload }` оставался от пробы CamelCase-варианта
+  // и только маскировал реальную ошибку первой попытки.
+  const r = await authFetchJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-  let lastErr: any = null;
-
-  for (const body of bodies) {
-    const r = await authFetchJson(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!r.ok) {
-      lastErr = new Error(`POST ${url} failed (${r.status}): ${r.text || "unknown"}`);
-      continue;
-    }
-
-    const id = pickVacancyId(r.data) ?? pickVacancyId(r);
-    if (!id) {
-      lastErr = new Error(`POST ${url} ok, но id вакансии не вернулся`);
-      continue;
-    }
-
-    return { id, raw: r.data };
+  if (!r.ok) {
+    throw new Error(extractErrMessage(r));
   }
 
-  throw lastErr ?? new Error("Failed to create vacancy");
+  const id = pickVacancyId(r.data) ?? pickVacancyId(r);
+  if (!id) {
+    throw new Error("Сервер вернул успех, но не передал id вакансии");
+  }
+
+  return { id, raw: r.data };
 }
 
 async function updateVacancy(
@@ -372,7 +375,10 @@ export default function ProfileHRFull() {
     schedule: "",
     work_format: "",
     experience: "",
-    position_status: "",
+    // Дефолт «open» совпадает с тем, что показывается в <select>; раньше тут
+    // была пустая строка, и если юзер не кликал по дропдауну — отправлялся
+    // position_status="" → бэк отбивал 400 «position_status is required».
+    position_status: "open",
   });
   const [vacancyFile, setVacancyFile] = useState<File | null>(null);
   const [vacancySaving, setVacancySaving] = useState(false);
@@ -585,14 +591,25 @@ export default function ProfileHRFull() {
           .filter((m: any) => Number(m?.status) === 2)
           .map((m: any) => String(m?.company_id || ""))
           .filter(Boolean);
+
+        // COMPANY_OWNER не подаёт заявки в свою же компанию — у него нет
+        // membership. Но в кабинете-HR (вакансии, компании в профиле) ему нужна
+        // именно своя компания. По соглашению Company-сервиса owner.userID ==
+        // company.id, поэтому добавляем hid как companyId, если он сам owner.
+        const role = (localStorage.getItem("role") || "").trim();
+        const isOwner = role === "ROLE_COMPANY_OWNER" || role === "ROLE_COMPANY";
+        const finalIds = isOwner && hid && !approvedIds.includes(hid)
+          ? [hid, ...approvedIds]
+          : approvedIds;
+
         // Синхронизируем legacy-ключ, чтобы редактор не выдавал устаревший список.
         if (hid) {
           try {
-            localStorage.setItem(hrCompaniesKey(hid), JSON.stringify(approvedIds));
+            localStorage.setItem(hrCompaniesKey(hid), JSON.stringify(finalIds));
           } catch { /* quota — ignore */ }
         }
 
-        await reloadCompanies(approvedIds);
+        await reloadCompanies(finalIds);
         await reloadVacancies(hid);
       } catch (e) {
         console.error("HR profile load error:", e);
@@ -710,7 +727,9 @@ export default function ProfileHRFull() {
       schedule: "",
       work_format: "",
       experience: "",
-      position_status: "",
+      // open — дефолтный статус, чтобы select был согласован со стейтом и бэк
+      // не отбивал «position_status is required» при отправке без кликов.
+      position_status: "open",
     });
 
     setShowVacancyModal(true);
@@ -751,10 +770,13 @@ export default function ProfileHRFull() {
         title,
         company_id: companyId,
         salary: salaryNum,
-        schedule: vacancyForm.schedule.trim() || undefined,
+        // schedule + position_status — обязательные на стороне Vacancy-сервиса
+        // (см. validateVacancy). Подставляем безопасные дефолты, чтобы юзер,
+        // не кликавший по этим dropdown'ам, не словил 400.
+        schedule: vacancyForm.schedule.trim() || "Гибкий",
         work_format: vacancyForm.work_format.trim() || undefined,
         experience: expNum,
-        position_status: vacancyForm.position_status.trim() || undefined,
+        position_status: vacancyForm.position_status.trim() || "open",
       });
 
       if (hrId && createdId) {
@@ -1777,7 +1799,16 @@ export default function ProfileHRFull() {
                   <h2 className="mj-modal-title">Создание вакансии</h2>
                   <p className="mj-modal-subtitle"></p>
                 </div>
-                <button className="mj-btn mj-btn--ghost" type="button" onClick={closeVacancyModal}></button>
+                <button
+                  className="mj-btn mj-btn--ghost"
+                  type="button"
+                  onClick={closeVacancyModal}
+                  aria-label="Закрыть"
+                  title="Закрыть"
+                  style={{ fontSize: 20, lineHeight: 1, padding: "6px 12px", fontWeight: 700 }}
+                >
+                  ×
+                </button>
               </div>
 
               <form onSubmit={handleCreateVacancy}>
