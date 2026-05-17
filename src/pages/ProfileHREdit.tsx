@@ -340,8 +340,15 @@ function CompanyPicker({
       {error && <div style={{ marginTop: 8, color: "var(--danger)" }}>{error}</div>}
 
       {!loading && !error && (
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.slice(0, 8).map((c) => {
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+            gap: 10,
+          }}
+        >
+          {filtered.slice(0, 12).map((c) => {
             const id = String(c.id || "");
             return (
               <button
