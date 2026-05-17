@@ -12,6 +12,7 @@ import {
   achievementTypeLabel,
   VERIFICATION_STATUS,
 } from "../api/achievements";
+import RoleBadge from "../components/ui/RoleBadge";
 
 type LevelKind = "bronze" | "silver" | "gold" | "expert";
 
@@ -161,6 +162,7 @@ export default function PublicProfile() {
                   }}
                 >
                   <h1 className="profile-name">{fullName}</h1>
+                  <RoleBadge role={profile.role} />
                   {level ? (
                     <span
                       className={`level-badge level-badge--${level.kind}`}

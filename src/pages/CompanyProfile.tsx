@@ -5,6 +5,7 @@ import "../assets/styles/profile-hr-mospolyjob.css";
 
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import RoleBadge from "../components/ui/RoleBadge";
 import avatarFallback from "../assets/images/человек.png";
 import { apiGateway } from "../api/apiGateway";
 
@@ -144,7 +145,10 @@ export default function CompanyProfile() {
           </div>
 
           <div className="profile-info">
-            <h2 className="profile-name">{company?.name || "Компания"}</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h2 className="profile-name">{company?.name || "Компания"}</h2>
+              <RoleBadge kind="company" />
+            </div>
 
             <ul className="profile-details-list">
               <li>Город: {company?.city || "—"}</li>

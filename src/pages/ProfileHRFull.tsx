@@ -4,6 +4,7 @@ import "../assets/styles/global.css";
 import "../assets/styles/profile-hr-mospolyjob.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import RoleBadge from "../components/ui/RoleBadge";
 import avatarFallback from "../assets/images/человек.png";
 import wave from "../assets/images/wave-white.png";
 import spiral from "../assets/images/spiral.png";
@@ -1011,7 +1012,10 @@ export default function ProfileHRFull() {
           </div>
 
           <div className="profile-info">
-            <h2 className="profile-name">{loading ? "Загрузка..." : fullName}</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h2 className="profile-name">{loading ? "Загрузка..." : fullName}</h2>
+              <RoleBadge kind="hr" />
+            </div>
 
             <ul className="profile-details-list">
               <li>Возраст: {typeof p.age === "number" ? `${p.age} лет` : "—"}</li>

@@ -27,6 +27,7 @@ export type ChatThread = {
   resource_id?: string;
   last_message?: string;
   last_at?: string;
+  last_from_user_id?: string;
   unread_count?: number;
   peer_id?: string;
   peer_name?: string;

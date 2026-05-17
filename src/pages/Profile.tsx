@@ -4,6 +4,7 @@ import "../assets/styles/global.css";
 import "../assets/styles/profile-mospolyjob.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import RoleBadge from "../components/ui/RoleBadge";
 import avatarFallback from "../assets/images/человек.png";
 import { apiGateway } from "../api/apiGateway";
 import AchievementsBlock, {
@@ -160,9 +161,12 @@ export default function Profile() {
               </div>
 
               <div className="profile-info">
-                <h2 className="profile-name">
-                  {fullName || "Имя пользователя не указано"}
-                </h2>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <h2 className="profile-name">
+                    {fullName || "Имя пользователя не указано"}
+                  </h2>
+                  <RoleBadge kind="student" />
+                </div>
 
                 <ul className="profile-details-list">
                   <li>

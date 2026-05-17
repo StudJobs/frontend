@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import "../assets/styles/global.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import "../assets/styles/vacancies-mospolyjob.css";
 import {
   ApplicationsAPI,
   Application,
@@ -116,9 +117,9 @@ export default function HRApplications() {
   );
 
   return (
-    <>
+    <div className="page-frame mj-no-top-divider">
       <Header />
-      <main className="page-narrow" style={{ paddingTop: 32, paddingBottom: 64 }}>
+      <main className="mj-vac-wrap" style={{ minHeight: "calc(100vh - 220px)" }}>
         <h1 className="page-title">
           Отклики{vacancyTitle ? ` · ${vacancyTitle}` : ""}
         </h1>
@@ -153,7 +154,7 @@ export default function HRApplications() {
               <div className="empty-state">Откликов пока нет.</div>
             )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="mj-vac-grid">
               {items.map((a) => {
                 const sname = studentNames[a.student_id] ?? a.student_id.slice(0, 8);
                 return (
@@ -257,6 +258,6 @@ export default function HRApplications() {
       )}
 
       <Footer />
-    </>
+    </div>
   );
 }

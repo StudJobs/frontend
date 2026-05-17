@@ -7,6 +7,7 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import SkillsInput from "../components/ui/SkillsInput";
 import SkillBadges from "../components/ui/SkillBadges";
+import RoleBadge from "../components/ui/RoleBadge";
 import { UsersAPI, UserListItem } from "../api/users";
 import { apiGateway } from "../api/apiGateway";
 import { ExpertiseAPI, ExpertiseTest } from "../api/expertise";
@@ -62,7 +63,10 @@ export default function ExpertProfile() {
     <div className="page-frame mj-no-top-divider">
       <Header />
       <main className="page-narrow" style={{ paddingTop: 32, paddingBottom: 64 }}>
-        <h1 className="page-title">Личный кабинет эксперта</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <h1 className="page-title" style={{ margin: 0 }}>Личный кабинет эксперта</h1>
+          <RoleBadge kind="expert" />
+        </div>
         <p className="muted" style={{ marginTop: -8, marginBottom: 20 }}>
           Эксперт может ревьюить заявки только по подтверждённым навыкам. Заявки
           на сертификаты, дипломы хакатонов и курсовые работы доступны всегда.

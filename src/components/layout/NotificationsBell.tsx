@@ -54,11 +54,13 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
     const lastSeen = getLastSeen();
     const acc: SjNotification[] = [];
 
-    // 1) Чаты: последние сообщения от собеседника.
+    // 1) Чаты: последние сообщения от собеседника. Своих не показываем —
+    // ты сам только что отправил, не нужно тебе об этом напоминать.
     try {
       const threads = await ChatAPI.listThreads();
       for (const t of threads) {
         if (!t.last_at || !t.last_message) continue;
+        if (t.last_from_user_id && me && t.last_from_user_id === me) continue;
         const ts = Date.parse(t.last_at);
         if (!ts) continue;
         const isUnread = ts > lastSeen;
@@ -224,7 +226,6 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
       (a, b) => Date.parse(b.ts) - Date.parse(a.ts)
     );
     setItems(sorted.slice(0, 30));
-    void me; // suppress unused
   }
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import NotificationsBell from "./NotificationsBell";
+import ThemeToggle, { getStoredTheme, setTheme } from "../ui/ThemeToggle";
 import "./Header.css";
 
 /* ============================================================================
@@ -258,6 +259,17 @@ export default function Header() {
                       </button>
                     )}
                     <div className="sj-usermenu__divider" />
+                    <button
+                      className="sj-usermenu__item"
+                      onClick={() => {
+                        const cur = getStoredTheme();
+                        setTheme(cur === "dark" ? "light" : "dark");
+                        setMenuOpen(false);
+                      }}
+                    >
+                      {getStoredTheme() === "dark" ? "Светлая тема ☀" : "Тёмная тема ☾"}
+                    </button>
+                    <div className="sj-usermenu__divider" />
                     <button className="sj-usermenu__item sj-usermenu__item--danger" onClick={handleLogout}>
                       Выйти
                     </button>
@@ -266,13 +278,16 @@ export default function Header() {
               </div>
             </>
           ) : (
-            <button
-              type="button"
-              className="sj-btn sj-btn--primary sj-btn--sm"
-              onClick={() => navigate("/auth")}
-            >
-              Войти
-            </button>
+            <>
+              <ThemeToggle />
+              <button
+                type="button"
+                className="sj-btn sj-btn--primary sj-btn--sm"
+                onClick={() => navigate("/auth")}
+              >
+                Войти
+              </button>
+            </>
           )}
         </div>
       </div>

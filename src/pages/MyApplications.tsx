@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import "../assets/styles/global.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import "../assets/styles/vacancies-mospolyjob.css";
 import {
   ApplicationsAPI,
   Application,
@@ -49,9 +50,9 @@ export default function MyApplications() {
   const qDebounced = useDebounced(q, 350);
 
   return (
-    <>
+    <div className="page-frame mj-no-top-divider">
       <Header />
-      <main className="page-narrow" style={{ paddingTop: 32, paddingBottom: 64 }}>
+      <main className="mj-vac-wrap" style={{ minHeight: "calc(100vh - 220px)" }}>
         <h1 className="page-title">Мои отклики и задачи</h1>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
@@ -97,7 +98,7 @@ export default function MyApplications() {
         {tab === "quests" && <TasksTab q={qDebounced} toast={toast} kind="quest" />}
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
 
@@ -240,7 +241,7 @@ function VacanciesTab({ q, toast }: { q: string; toast: ReturnType<typeof useToa
         />
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="mj-vac-grid">
         {pageItems.map((a) => {
           const title = vacancyTitles[a.vacancy_id] ?? "Вакансия";
           return (
