@@ -67,14 +67,18 @@ async function fetchCompanyById(id: string): Promise<CompanyDTO | null> {
   }
 }
 
-async function searchCompanies(query: string): Promise<CompanyDTO[]> {
+async function searchCompanies(query: string, city?: string, companyType?: string): Promise<CompanyDTO[]> {
   const q = query.trim();
+  const params: Record<string, string> = {};
+  if (q) params.q = q;
+  if (city && city.trim()) params.city = city.trim();
+  if (companyType && companyType.trim()) params.company_type = companyType.trim();
 
   try {
     const resp = await apiGateway({
       method: "GET",
       url: COMPANY_LIST_ENDPOINT,
-      params: q ? ({ q } as any) : undefined,
+      params: Object.keys(params).length ? params : undefined,
     });
     const data: any = (resp as any)?.data ?? resp ?? {};
     const arr =
@@ -91,7 +95,7 @@ async function searchCompanies(query: string): Promise<CompanyDTO[]> {
     const resp = await apiGateway({
       method: "GET",
       url: "/company",
-      params: q ? ({ q } as any) : undefined,
+      params: Object.keys(params).length ? params : undefined,
     });
     const data: any = (resp as any)?.data ?? resp ?? {};
     const arr =
@@ -263,6 +267,8 @@ function CompanyPicker({
   onAdd: (company: CompanyDTO) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<CompanyDTO[]>([]);
   const [error, setError] = useState<string>("");
@@ -287,7 +293,7 @@ function CompanyPicker({
       try {
         setError("");
         setLoading(true);
-        const res = await searchCompanies(query);
+        const res = await searchCompanies(query, cityFilter, typeFilter);
         if (!alive) return;
         setItems(res);
       } catch {
@@ -301,27 +307,37 @@ function CompanyPicker({
     return () => {
       alive = false;
     };
-  }, [query]);
+  }, [query, cityFilter, typeFilter]);
 
   return (
     <div style={{ marginTop: 18 }}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Добавить компанию</div>
 
       <input
+        className="mj-vac-input"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Поиск по названию / городу..."
-        style={{
-          width: "100%",
-          borderRadius: 12,
-          border: "1px solid #d9d9d9",
-          padding: "10px 12px",
-          outline: "none",
-        }}
+        placeholder="Поиск по названию или описанию…"
+        style={{ width: "100%" }}
       />
 
-      {loading && <div style={{ marginTop: 8, opacity: 0.7 }}>Загрузка…</div>}
-      {error && <div style={{ marginTop: 8, color: "#b00020" }}>{error}</div>}
+      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <input
+          className="mj-vac-input"
+          value={cityFilter}
+          onChange={(e) => setCityFilter(e.target.value)}
+          placeholder="Город (напр.: Москва)"
+        />
+        <input
+          className="mj-vac-input"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          placeholder="Тип (напр.: IT, FinTech)"
+        />
+      </div>
+
+      {loading && <div style={{ marginTop: 8, color: "var(--ink-muted)" }}>Загрузка…</div>}
+      {error && <div style={{ marginTop: 8, color: "var(--danger)" }}>{error}</div>}
 
       {!loading && !error && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -339,26 +355,28 @@ function CompanyPicker({
                   alignItems: "center",
                   gap: 12,
                   borderRadius: 12,
-                  border: "1px solid #e5e5e5",
-                  background: "#fff",
-                  padding: "10px 12px",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--ink)",
+                  padding: "10px 14px",
                   cursor: isStr(id) ? "pointer" : "not-allowed",
                   textAlign: "left",
                 }}
               >
-                <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", color: "var(--ink)" }}>
                   {c.name || "Компания"}
-                  <span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 8 }}>
-                    {c.city ? `(${c.city})` : ""}
+                  <span style={{ fontWeight: 400, color: "var(--ink-muted)", marginLeft: 8 }}>
+                    {c.city ? `· ${c.city}` : ""}
+                    {(c as any).company_type ? ` · ${(c as any).company_type}` : ""}
                   </span>
                 </span>
-                <span style={{ fontWeight: 800 }}>＋</span>
+                <span style={{ fontWeight: 800, color: "var(--brand)" }}>＋</span>
               </button>
             );
           })}
 
           {filtered.length === 0 && (
-            <div style={{ marginTop: 6, opacity: 0.7 }}>Ничего не найдено.</div>
+            <div style={{ marginTop: 6, color: "var(--ink-muted)" }}>Ничего не найдено.</div>
           )}
         </div>
       )}
