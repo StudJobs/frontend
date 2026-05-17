@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/styles/global.css";
 import "../assets/styles/profile-hr-mospolyjob.css";
+import "../assets/styles/vacancies-mospolyjob.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import RoleBadge from "../components/ui/RoleBadge";
+import SkillBadges from "../components/ui/SkillBadges";
 import avatarFallback from "../assets/images/человек.png";
 import wave from "../assets/images/wave-white.png";
 import spiral from "../assets/images/spiral.png";
@@ -648,6 +650,31 @@ export default function ProfileHRFull() {
     });
   }, [companies]);
 
+  // companyId → name. Используется в карточке вакансии: вместо UUID показываем
+  // название компании. Компании уже загружены в стейт companies, переиспользуем.
+  const companyNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    companies.forEach((c) => {
+      const id = String(c.id || "").trim();
+      const name = String(c.name || "").trim();
+      if (id && name) m[id] = name;
+    });
+    return m;
+  }, [companies]);
+
+  // Только МОИ вакансии: бэк отдаёт по company_id (все вакансии компании,
+  // включая других HR), но в личном кабинете HR должен видеть только то, что
+  // публиковал сам. Owner — тоже отбирает свои; чужие модерирует через /company-admin.
+  const myVacancies = useMemo(() => {
+    if (!hrId) return [];
+    return vacancies.filter((v: any) => {
+      const aid = String(v?.author_id || "").trim();
+      // Backwards-compat: старые записи без author_id показываем владельцу
+      // (предположительно он их и создал — до появления author_id-колонки).
+      return !aid || aid === hrId;
+    });
+  }, [vacancies, hrId]);
+
   const openCompany = (c: CompanyItem) => {
     setSelectedCompany(normalizeCompany(c));
     setShowCompanyModal(true);
@@ -1099,54 +1126,8 @@ export default function ProfileHRFull() {
           </button>
         </div>
 
-        <div className="hr-section">
-          <h3>Список доступных вакансий, оставленных пользователем:</h3>
-
-          {vacanciesLoading ? (
-            <p style={{ marginTop: 12 }}>Загрузка вакансий...</p>
-          ) : vacanciesError ? (
-            <p style={{ marginTop: 12, color: "#d00" }}>{vacanciesError}</p>
-          ) : vacancies.length === 0 ? (
-            <p style={{ marginTop: 12 }}>Пока нет вакансий. Создай первую — и она появится здесь.</p>
-          ) : (
-            <div style={{ marginTop: 18, overflow: "hidden" }}>
-              <div className="hr-carousel__track" role="region" aria-label="Вакансии">
-                {vacancies.map((vac: any, idx: number) => {
-                  const pack = decorPack[idx % decorPack.length];
-                  const v = normalizeVacancy(vac);
-
-                  const subtitle = [
-                    v.salary ? money(v.salary) : "",
-                    v.schedule || "",
-                    v.work_format || "",
-                    typeof v.experience === "number" ? `Опыт: ${v.experience}` : "",
-                    v.position_status || "",
-                  ]
-                    .filter(Boolean)
-                    .join(" • ");
-
-                  return (
-                    <article
-                      key={v.id || `vac-${idx}`}
-                      className={`hr-card hr-card--${pack.color} hr-carousel__item`}
-                      style={{ cursor: "pointer" }}
-                      onClick={() => openVacancyView(v)}
-                      title="Открыть"
-                    >
-                      <div className="hr-card-decor">
-                        <img src={pack.decor} alt="" />
-                      </div>
-                      <h3>{v.title || "Вакансия"}</h3>
-                      {subtitle ? <p style={{ marginTop: 6, opacity: 0.9 }}>{subtitle}</p> : null}
-                      <span className="hr-card-link">Посмотреть</span>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
+        {/* Сначала компании, потом вакансии — так HR быстрее ориентируется:
+            «вот моя компания» → «вот вакансии под неё». Раньше было наоборот. */}
         <div className="hr-section">
           <h3>Компании в профиле HR:</h3>
 
@@ -1211,6 +1192,94 @@ export default function ProfileHRFull() {
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="hr-section">
+          <h3>Мои вакансии:</h3>
+
+          {vacanciesLoading ? (
+            <p style={{ marginTop: 12 }}>Загрузка вакансий...</p>
+          ) : vacanciesError ? (
+            <p style={{ marginTop: 12, color: "#d00" }}>{vacanciesError}</p>
+          ) : myVacancies.length === 0 ? (
+            <p style={{ marginTop: 12 }}>Пока нет вакансий. Создай первую — и она появится здесь.</p>
+          ) : (
+            // Карточки в гриде — тот же layout, что у студента на /vacancies
+            // (mj-vac-grid + mj-vac-card + hr-card). Раньше тут был горизонтальный
+            // карусель с тонкими карточками — после редизайна решили оставить
+            // одинаковую сетку для всех просмотров вакансий.
+            <div className="mj-vac-grid" style={{ marginTop: 14 }}>
+              {myVacancies.map((vac: any, idx: number) => {
+                const v = normalizeVacancy(vac);
+                const cardVariantCls =
+                  idx % 3 === 0 ? "hr-card--green" :
+                  idx % 3 === 1 ? "hr-card--red" : "hr-card--purple";
+                const cardDecorImg =
+                  idx % 3 === 0 ? wave :
+                  idx % 3 === 1 ? checkLong : spiral;
+
+                const companyId = String((v as any).company_id || "");
+                const companyName = (companyId && companyNameById[companyId]) || "";
+
+                // moderation_status: 1 PENDING, 2 PUBLISHED, 3 REJECTED.
+                const modStatus = Number((v as any).moderation_status || 0);
+                const moderationPill =
+                  modStatus === 1 ? "На модерации" :
+                  modStatus === 3 ? "Отклонена" : null; // 2 опускаем — это норма
+
+                return (
+                  <article
+                    key={v.id || `vac-${idx}`}
+                    className={`hr-card mj-vac-card ${cardVariantCls}`}
+                    onClick={() => openVacancyView(v)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") openVacancyView(v);
+                    }}
+                  >
+                    <div className="hr-card-decor" aria-hidden>
+                      <img src={cardDecorImg} alt="" />
+                    </div>
+
+                    <h3>{v.title || "Вакансия"}</h3>
+
+                    {companyName ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          opacity: 0.88,
+                          fontWeight: 800,
+                          fontSize: 13,
+                        }}
+                      >
+                        {companyName}
+                      </div>
+                    ) : null}
+
+                    <div className="hr-card-link">Посмотреть</div>
+
+                    <div className="mj-vac-kpi">
+                      <span className="mj-vac-pill">{money((v as any).salary)}</span>
+                      <span className="mj-vac-pill">
+                        Опыт: {typeof (v as any).experience === "number" ? (v as any).experience : "—"}
+                      </span>
+                      <span className="mj-vac-pill">{(v as any).position_status || "open"}</span>
+                      {moderationPill ? (
+                        <span className="mj-vac-pill">{moderationPill}</span>
+                      ) : null}
+                    </div>
+
+                    {Array.isArray((v as any).skill_slugs) && (v as any).skill_slugs.length ? (
+                      <div style={{ marginTop: 10 }}>
+                        <SkillBadges slugs={(v as any).skill_slugs as string[]} />
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
