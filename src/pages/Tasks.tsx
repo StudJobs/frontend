@@ -17,6 +17,9 @@ import {
   MicroTask,
   TASK_STATUS,
   taskStatusLabel,
+  Submission,
+  SUBMISSION_STATUS,
+  submissionStatusLabel,
 } from "../api/tasks";
 import { useToast } from "../components/ui/Toast";
 import { getCurrentUserId } from "../api/apiGateway";
@@ -96,6 +99,10 @@ export default function Tasks() {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   const [actionMsg, setActionMsg] = useState("");
+  // Последняя submission'а текущего студента по выбранной задаче — если есть
+  // PENDING/APPROVED, форма «отправить решение» прячется и показывается плашка
+  // «Отправлено». REJECTED разрешает отправить ещё раз.
+  const [mySubmission, setMySubmission] = useState<Submission | null>(null);
 
   const [myId, setMyId] = useState<string>(() => getMyId());
   useEffect(() => {
@@ -220,11 +227,11 @@ export default function Tasks() {
     setBusy(true);
     setActionMsg("");
     try {
-      await TasksAPI.submit(selected.id, {
+      const sub = await TasksAPI.submit(selected.id, {
         solution_url: solutionUrl.trim(),
         comment: solutionComment.trim() || undefined,
       });
-      setActionMsg("Решение отправлено на ревью. Ждите ответа HR.");
+      setMySubmission(sub);
       setSolutionUrl("");
       setSolutionComment("");
       toast.success(
@@ -238,6 +245,34 @@ export default function Tasks() {
       setBusy(false);
     }
   };
+
+  // Подтягиваем последнюю submission'у для выбранной задачи. Без неё после
+  // отправки UI не «знает», что решение уже улетело, и форма позволяет дубль.
+  useEffect(() => {
+    if (!selected || !canApply) {
+      setMySubmission(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await TasksAPI.listMySubmissions();
+        const list = res?.submissions || [];
+        // Сортируем по submitted_at DESC и берём первую запись по этой задаче.
+        const forTask = list
+          .filter((s) => s.microtask_id === selected.id)
+          .sort((a, b) =>
+            String(b.submitted_at || "").localeCompare(String(a.submitted_at || ""))
+          );
+        if (!cancelled) setMySubmission(forTask[0] || null);
+      } catch {
+        if (!cancelled) setMySubmission(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.id, canApply]);
 
   return (
     <div className="page-frame mj-no-top-divider">
@@ -521,38 +556,94 @@ export default function Tasks() {
             selected.status === TASK_STATUS.ASSIGNED &&
             myId &&
             selected.assigned_to === myId ? (
-              <div className="mj-grid">
-                <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
-                  <div className="mj-label">Ссылка на решение (репо/архив)</div>
-                  <input
-                    className="mj-vac-input"
-                    placeholder="https://github.com/..."
-                    value={solutionUrl}
-                    onChange={(e) => setSolutionUrl(e.target.value)}
-                  />
+              // Если есть PENDING/APPROVED submission — форма не нужна, вместо неё
+              // плашка-итог. REJECTED разрешает отправить заново (HR не принял).
+              mySubmission && mySubmission.status !== SUBMISSION_STATUS.REJECTED ? (
+                <div
+                  style={{
+                    padding: "16px 18px",
+                    borderRadius: 14,
+                    background: "var(--success-soft, rgba(93,179,116,0.14))",
+                    border: "1px solid var(--success, #5db374)",
+                    color: "var(--ink, inherit)",
+                  }}
+                >
+                  <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 6 }}>
+                    ✓ Решение отправлено · {submissionStatusLabel(mySubmission.status)}
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.85, wordBreak: "break-all" }}>
+                    Ссылка: {mySubmission.solution_url}
+                  </div>
+                  {mySubmission.comment ? (
+                    <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>
+                      Комментарий: {mySubmission.comment}
+                    </div>
+                  ) : null}
+                  {mySubmission.status === SUBMISSION_STATUS.APPROVED && mySubmission.review_comment ? (
+                    <div style={{ fontSize: 13, marginTop: 6 }}>
+                      <strong>Ревьюер:</strong> {mySubmission.review_comment}
+                    </div>
+                  ) : null}
+                  <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+                    HR увидит решение в /hr/tasks. После approve ачивка появится в портфолио.
+                  </div>
                 </div>
-                <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
-                  <div className="mj-label">Комментарий (необязательно)</div>
-                  <textarea
-                    className="mj-vac-input"
-                    rows={3}
-                    placeholder="Что важно знать ревьюеру"
-                    value={solutionComment}
-                    onChange={(e) => setSolutionComment(e.target.value)}
-                  />
+              ) : (
+                <div className="mj-grid">
+                  {mySubmission && mySubmission.status === SUBMISSION_STATUS.REJECTED ? (
+                    <div
+                      className="mj-field"
+                      style={{
+                        gridColumn: "1 / -1",
+                        padding: "10px 14px",
+                        borderRadius: 12,
+                        background: "var(--danger-soft, rgba(215,98,98,0.14))",
+                        border: "1px solid var(--danger, #d76262)",
+                      }}
+                    >
+                      <div style={{ fontWeight: 800 }}>Прошлое решение отклонено</div>
+                      {mySubmission.review_comment ? (
+                        <div style={{ fontSize: 13, marginTop: 4 }}>
+                          <strong>Ревьюер:</strong> {mySubmission.review_comment}
+                        </div>
+                      ) : null}
+                      <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                        Можно загрузить новую версию ниже.
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
+                    <div className="mj-label">Ссылка на решение (репо/архив)</div>
+                    <input
+                      className="mj-vac-input"
+                      placeholder="https://github.com/..."
+                      value={solutionUrl}
+                      onChange={(e) => setSolutionUrl(e.target.value)}
+                    />
+                  </div>
+                  <div className="mj-field" style={{ gridColumn: "1 / -1" }}>
+                    <div className="mj-label">Комментарий (необязательно)</div>
+                    <textarea
+                      className="mj-vac-input"
+                      rows={3}
+                      placeholder="Что важно знать ревьюеру"
+                      value={solutionComment}
+                      onChange={(e) => setSolutionComment(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <button
+                      type="button"
+                      className="mj-vac-btn"
+                      style={{ width: "100%", borderRadius: 14, padding: "12px 16px", fontWeight: 900 }}
+                      disabled={busy || !solutionUrl.trim()}
+                      onClick={handleSubmit}
+                    >
+                      {busy ? "Отправка…" : "Отправить решение"}
+                    </button>
+                  </div>
                 </div>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <button
-                    type="button"
-                    className="mj-vac-btn"
-                    style={{ width: "100%", borderRadius: 14, padding: "12px 16px", fontWeight: 900 }}
-                    disabled={busy || !solutionUrl.trim()}
-                    onClick={handleSubmit}
-                  >
-                    {busy ? "Отправка…" : "Отправить решение"}
-                  </button>
-                </div>
-              </div>
+              )
             ) : null}
 
             {selected.status === TASK_STATUS.ASSIGNED && (!myId || selected.assigned_to !== myId) ? (

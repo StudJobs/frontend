@@ -95,10 +95,11 @@ const AchievementsBlock = forwardRef<
     try {
       setLoading(true);
       setError("");
+      const effectiveType = selectedType === 0 ? 6 : selectedType;
       await AchievementsAPI.upload(
         file,
         file.name,
-        selectedType,
+        effectiveType,
         externalURL.trim() || undefined,
         description.trim() || undefined,
       );
@@ -122,13 +123,17 @@ const AchievementsBlock = forwardRef<
 
   const handleSaveLink = async () => {
     const url = externalURL.trim();
-    if (!url || selectedType === 0) return;
+    if (!url) return;
+    // Если пользователь оставил «Без типа» (selectedType=0), считаем дефолтом
+    // «Иное» (6). Раньше кнопка просто блокировалась — это путало: ссылка
+    // заполнена, а UI «не реагирует».
+    const effectiveType = selectedType === 0 ? 6 : selectedType;
     try {
       setLoading(true);
       setError("");
       await AchievementsAPI.createLink({
         externalURL: url,
-        type: selectedType,
+        type: effectiveType,
         description: description.trim() || undefined,
       });
       await loadAchievements();
@@ -209,26 +214,38 @@ const AchievementsBlock = forwardRef<
             type="button"
             className="achievement-toolbar__upload-btn"
             onClick={() => fileInputRef.current?.click()}
-            disabled={loading || selectedType === 0}
-            title={
-              selectedType === 0
-                ? "Сначала выберите тип достижения"
-                : "Выбрать файл"
-            }
+            // Тип НЕ обязателен — при «Без типа» используем 6 («Иное») как дефолт
+            // (см. handleFileChange/handleSaveLink). Кнопка зажата только при загрузке.
+            disabled={loading}
+            title="Выбрать файл"
           >
             + Файл
           </button>
           <button
             type="button"
             className="achievement-toolbar__upload-btn"
-            onClick={handleSaveLink}
-            disabled={loading || selectedType === 0 || !externalURL.trim()}
+            onClick={() => {
+              if (!externalURL.trim()) {
+                // Скроллим к полю и ставим фокус, чтобы юзеру не приходилось
+                // искать details со ссылкой.
+                const el = document.querySelector<HTMLInputElement>(
+                  ".achievement-extras input[type='url']"
+                );
+                if (el) {
+                  el.focus();
+                  el.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+                return;
+              }
+              handleSaveLink();
+            }}
+            // Кнопка активна как только заполнена ссылка — тип НЕ обязателен,
+            // дефолт «Иное» подставляется в handleSaveLink.
+            disabled={loading || !externalURL.trim()}
             title={
-              selectedType === 0
-                ? "Сначала выберите тип"
-                : !externalURL.trim()
-                ? "Заполните «Ссылка» в блоке ниже"
-                : "Сохранить ссылку без файла"
+              !externalURL.trim()
+                ? "Сначала заполните поле «Ссылка»"
+                : "Сохранить ачивку как ссылку без файла"
             }
           >
             + Только ссылка
@@ -259,9 +276,11 @@ const AchievementsBlock = forwardRef<
         </div>
       </div>
 
-      {/* Опциональные поля для эксперта: ссылка на репо/демо + описание контекста. */}
-      <details className="achievement-extras">
-        <summary>+ Ссылка и описание (опционально)</summary>
+      {/* Опциональные поля для эксперта: ссылка на репо/демо + описание контекста.
+          Открыто по умолчанию — иначе кнопка «+ Только ссылка» висит disabled и
+          непонятно куда вписать сам URL. */}
+      <details className="achievement-extras" open>
+        <summary>Ссылка и описание</summary>
         <div className="achievement-extras__body">
           <label className="achievement-extras__field">
             <span>Ссылка (репозиторий / демо / презентация)</span>
