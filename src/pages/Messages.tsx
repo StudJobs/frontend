@@ -152,6 +152,23 @@ export default function Messages() {
     }
   }
 
+  async function hideThread(t: ChatThread) {
+    if (!window.confirm(`Скрыть диалог «${threadTitle(t)}»? Собеседник его продолжит видеть. У вас он исчезнет из списка.`))
+      return;
+    try {
+      const parts = t.thread_id.split(":");
+      if (parts.length !== 2) return;
+      await ChatAPI.hideThread(parts[0] as ThreadKind, parts[1]);
+      setThreads((arr) => arr.filter((x) => x.thread_id !== t.thread_id));
+      if (activeId === t.thread_id) {
+        setActiveId("");
+        setParams({}, { replace: true });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   function selectThread(id: string) {
     setActiveId(id);
     setParams({ thread: id }, { replace: true });
@@ -220,8 +237,11 @@ export default function Messages() {
               {displayThreads.map((t) => {
                 const isActive = t.thread_id === activeId;
                 return (
-                  <button
+                  <div
                     key={t.thread_id}
+                    style={{ position: "relative", borderBottom: "1px solid var(--border)" }}
+                  >
+                  <button
                     type="button"
                     onClick={() => selectThread(t.thread_id)}
                     style={{
@@ -261,6 +281,29 @@ export default function Messages() {
                       {t.last_message || "…"}
                     </div>
                   </button>
+                  <button
+                    type="button"
+                    title="Скрыть этот диалог у меня (собеседник продолжит видеть)"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void hideThread(t);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      background: "transparent",
+                      border: 0,
+                      color: "var(--ink-muted)",
+                      cursor: "pointer",
+                      fontSize: 14,
+                      padding: "2px 6px",
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -345,27 +388,16 @@ export default function Messages() {
                       Сообщений ещё нет — напишите первое.
                     </div>
                   )}
-                  {messages.map((m) => {
-                    const mine = m.from_user_id === myId;
-                    return (
-                      <div
-                        key={m.id}
-                        style={{
-                          alignSelf: mine ? "flex-end" : "flex-start",
-                          maxWidth: "70%",
-                          padding: "8px 12px",
-                          background: mine ? "var(--brand-soft)" : "var(--surface)",
-                          border: "1px solid var(--border)",
-                          borderRadius: 12,
-                          whiteSpace: "pre-wrap",
-                          fontSize: 14,
-                        }}
-                        title={new Date(m.created_at).toLocaleString()}
-                      >
-                        {m.body}
-                      </div>
-                    );
-                  })}
+                  {messages.map((m) => (
+                    <MessageBubble
+                      key={m.id}
+                      m={m}
+                      mine={m.from_user_id === myId}
+                      onEdited={(updated) =>
+                        setMessages((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
+                      }
+                    />
+                  ))}
                 </div>
 
                 {!accessError && (
@@ -402,5 +434,146 @@ export default function Messages() {
       </main>
       <Footer />
     </>
+  );
+}
+
+// MessageBubble — пузырь одного сообщения. Если своё — справа, синий, есть ✎ для редактирования.
+// Чужие — слева, серые, без редактирования.
+function MessageBubble({
+  m,
+  mine,
+  onEdited,
+}: {
+  m: ChatMessage;
+  mine: boolean;
+  onEdited: (updated: ChatMessage) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(m.body);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save() {
+    const body = draft.trim();
+    if (!body || body === m.body) {
+      setEditing(false);
+      setDraft(m.body);
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await ChatAPI.editMessage(m.id, body);
+      onEdited(updated);
+      setEditing(false);
+    } catch (e: any) {
+      setError(e?.response?.data?.message || "Не удалось обновить");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: mine ? "flex-end" : "flex-start",
+        marginBottom: 6,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "70%",
+          background: mine ? "var(--brand)" : "var(--surface-alt, #f1f3f5)",
+          color: mine ? "white" : "var(--ink)",
+          padding: "8px 12px",
+          borderRadius: 14,
+          fontSize: 14,
+          position: "relative",
+        }}
+      >
+        {editing ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={2}
+              autoFocus
+              style={{
+                minWidth: 220,
+                background: "white",
+                color: "var(--ink)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: 6,
+                resize: "vertical",
+              }}
+            />
+            {error && (
+              <div style={{ fontSize: 11, color: "var(--danger, #c0392b)" }}>{error}</div>
+            )}
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(m.body);
+                  setError("");
+                }}
+                disabled={saving}
+                style={{ padding: "2px 8px", fontSize: 12 }}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={save}
+                disabled={saving || !draft.trim()}
+                style={{ padding: "2px 8px", fontSize: 12 }}
+              >
+                {saving ? "…" : "Сохранить"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
+            <div
+              style={{
+                fontSize: 10,
+                opacity: 0.7,
+                marginTop: 4,
+                display: "flex",
+                gap: 6,
+                justifyContent: mine ? "flex-end" : "flex-start",
+                alignItems: "center",
+              }}
+            >
+              <span>{new Date(m.created_at).toLocaleString()}</span>
+              {m.edited_at && <span>· изменено</span>}
+              {mine && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  title="Редактировать"
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    cursor: "pointer",
+                    color: "inherit",
+                    padding: 0,
+                    opacity: 0.85,
+                  }}
+                >
+                  ✎
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

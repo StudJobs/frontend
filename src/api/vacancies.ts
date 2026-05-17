@@ -97,6 +97,13 @@ export const VacanciesAPI = {
     return [];
   },
 
+  async get(id: string): Promise<VacancyItem | null> {
+    const r = await apiGateway({ method: "GET", url: `/vacancy/${encodeURIComponent(id)}` });
+    const data = unwrap(r);
+    if (!data || typeof data !== "object") return null;
+    return data as VacancyItem;
+  },
+
   async create(payload: any): Promise<VacancyItem> {
     const r = await apiGateway({ method: "POST", url: "/hr/vacancy", data: payload });
     return unwrap(r) as VacancyItem;

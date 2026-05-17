@@ -9,6 +9,7 @@ export type ChatMessage = {
   from_user_id: string;
   body: string;
   created_at: string;
+  edited_at?: string;
 };
 
 export type ChatMessageList = {
@@ -64,5 +65,22 @@ export const ChatAPI = {
       })
     );
     return data as ChatMessage;
+  },
+
+  // Редактировать своё сообщение (бэк проверит авторство).
+  async editMessage(messageId: string, body: string): Promise<ChatMessage> {
+    const data = unwrap(
+      await apiGateway({
+        method: "PATCH",
+        url: `/chat/messages/${encodeURIComponent(messageId)}`,
+        data: { body },
+      })
+    );
+    return data as ChatMessage;
+  },
+
+  // Скрыть тред «у себя» — собеседник продолжает видеть, история не теряется.
+  async hideThread(kind: ThreadKind, rid: string): Promise<void> {
+    await apiGateway({ method: "DELETE", url: `/chat/${kind}/${encodeURIComponent(rid)}` });
   },
 };

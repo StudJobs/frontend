@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatAPI } from "../../api/chat";
 import { ApplicationsAPI } from "../../api/applications";
-import { TasksAPI, SUBMISSION_STATUS } from "../../api/tasks";
+import { TasksAPI, SUBMISSION_STATUS, TASK_STATUS } from "../../api/tasks";
+import { VacanciesAPI } from "../../api/vacancies";
 import { getCurrentUserId } from "../../api/apiGateway";
 
 /* ============================================================================
@@ -20,6 +21,8 @@ export type NotifKind =
   | "application_status"
   | "achievement_review"
   | "microtask_review"
+  | "microtask_deadline"
+  | "vacancy_status"
   | "system";
 
 export interface SjNotification {
@@ -114,6 +117,100 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
             read: ts <= lastSeen,
             link: "/my/applications",
           });
+        }
+      } catch {
+        // ignore
+      }
+
+      // Дедлайны взятых в работу микрозадач — напоминаем, когда осталось ≤3 дней.
+      // Уведомление считается непрочитанным, пока юзер не нажал «прочитать всё».
+      try {
+        const assigned = await TasksAPI.listMyAssigned({ status: TASK_STATUS.ASSIGNED, limit: 50 });
+        const now = Date.now();
+        const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+        for (const t of assigned.tasks || []) {
+          if (!t.deadline) continue;
+          const dl = Date.parse(t.deadline);
+          if (!dl) continue;
+          const left = dl - now;
+          if (left > THREE_DAYS) continue;
+          const overdue = left < 0;
+          const days = Math.max(0, Math.ceil(left / (24 * 60 * 60 * 1000)));
+          // ts — это сам дедлайн; «свежесть» уведомления определяется приближением.
+          // Чтобы оно не «застывало», ts двигаем близко к now (минута назад), это
+          // выводит дедлайн-напоминание наверх списка.
+          acc.push({
+            id: "deadline-" + t.id,
+            kind: "microtask_deadline",
+            title: overdue
+              ? `Просрочено: ${t.title}`
+              : days === 0
+              ? `Сегодня дедлайн: ${t.title}`
+              : `Через ${days} дн. дедлайн: ${t.title}`,
+            body: `Срок: ${new Date(dl).toLocaleString()}`,
+            ts: new Date(now - 60_000).toISOString(),
+            read: false,
+            link: "/my/applications",
+          });
+        }
+      } catch {
+        // ignore
+      }
+
+      // Изменения статуса вакансии у активных откликов (paused / closed).
+      // Тянем вакансии только для откликов в состоянии PENDING/ACCEPTED — не имеет
+      // смысла напоминать про отклонённые. Кеш в localStorage по id вакансии,
+      // уведомление приходит только при смене значения.
+      try {
+        const apps = await ApplicationsAPI.listMine({ limit: 50 });
+        const cacheKey = "sj_vacancy_status_cache";
+        let cache: Record<string, string> = {};
+        try {
+          cache = JSON.parse(localStorage.getItem(cacheKey) || "{}") || {};
+        } catch {
+          cache = {};
+        }
+        const next: Record<string, string> = { ...cache };
+        const seen = new Set<string>();
+        for (const a of apps.applications) {
+          if (a.status === 3) continue; // отклонён — не интересует
+          if (seen.has(a.vacancy_id)) continue;
+          seen.add(a.vacancy_id);
+          try {
+            const v = await VacanciesAPI.get(a.vacancy_id);
+            if (!v) continue;
+            const cur = (v.position_status || "").toLowerCase();
+            next[a.vacancy_id] = cur;
+            const prev = cache[a.vacancy_id];
+            // Уведомляем, когда статус стал НЕ "open" и изменился относительно
+            // того, что было в прошлый раз. Для первого захода сравниваем с "open" —
+            // показываем только если вакансия уже не открыта.
+            const prevWas = prev ?? "open";
+            if (cur && cur !== "open" && cur !== prevWas) {
+              const title =
+                cur === "paused" || cur === "pause"
+                  ? `Вакансия приостановлена: ${v.title || ""}`
+                  : cur === "closed" || cur === "close"
+                  ? `Вакансия закрыта: ${v.title || ""}`
+                  : `Статус вакансии изменён: ${v.title || ""} (${cur})`;
+              acc.push({
+                id: "vacstatus-" + a.vacancy_id + "-" + cur,
+                kind: "vacancy_status",
+                title,
+                body: "Ваш отклик может остаться без рассмотрения",
+                ts: new Date().toISOString(),
+                read: false,
+                link: "/my/applications",
+              });
+            }
+          } catch {
+            // ignore single vacancy
+          }
+        }
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(next));
+        } catch {
+          // ignore quota
         }
       } catch {
         // ignore
@@ -241,6 +338,8 @@ const KIND_LABEL: Record<NotifKind, string> = {
   application_status: "Отклик",
   achievement_review: "Достижение",
   microtask_review: "Микрозадача",
+  microtask_deadline: "Дедлайн",
+  vacancy_status: "Вакансия",
   system: "Платформа",
 };
 
