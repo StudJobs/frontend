@@ -504,23 +504,17 @@ export default function ProfileHRFull() {
 
       const list = await fetchMyVacancies();
 
-      const myIds = new Set<string>(getHrVacancyIds(hidForBindings));
-
+      // Раньше показывали только вакансии, чьи id записаны в localStorage
+      // (`hr_vacancy_ids_<hrId>`). Это был костыль доинвентаризации
+      // на бэке author_id. Сейчас Gateway отдаёт `GET /hr/vacancy` уже
+      // только для своей компании (через approved-membership / owner),
+      // и фильтрует по `author_id` для HR — поэтому localStorage больше
+      // источником не должен быть. Иначе свежесозданная (но ещё не
+      // подвязанная клиент-сайд) вакансия исчезает из «Мои вакансии».
       const bindings = getBindings(hidForBindings);
-      Object.keys(bindings || {}).forEach((id) => myIds.add(String(id)));
-
       const attachments = getAttachments(hidForBindings);
-      Object.keys(attachments || {}).forEach((id) => myIds.add(String(id)));
 
-      const filtered = myIds.size
-        ? list.filter((v: any) =>
-            myIds.has(
-              String((v as any)?.id ?? (v as any)?.vacancy_id ?? (v as any)?.uuid ?? "")
-            )
-          )
-        : [];
-
-      const patched = filtered.map((v) => {
+      const patched = list.map((v) => {
         const nv = normalizeVacancy(v);
         const vid = nv.id ? String(nv.id) : "";
 

@@ -557,8 +557,13 @@ function MessageBubble({
       <div
         style={{
           maxWidth: "70%",
-          background: mine ? "var(--brand)" : "var(--surface-alt, #f1f3f5)",
-          color: mine ? "white" : "var(--ink)",
+          // mine — amber фирменный, читается на любой подложке (ink-on-brand тёмный).
+          // чужие — поднятая поверхность по теме (--surface-elev), 1px рамка для
+          // визуального отделения от фона; раньше тут было захардкоженное #f1f3f5,
+          // которое в тёмной теме давало белый пузырь с белым текстом.
+          background: mine ? "var(--brand)" : "var(--surface-elev)",
+          color: mine ? "var(--ink-on-brand)" : "var(--ink)",
+          border: mine ? "none" : "1px solid var(--border)",
           padding: "8px 12px",
           borderRadius: 14,
           fontSize: 14,
@@ -574,7 +579,9 @@ function MessageBubble({
               autoFocus
               style={{
                 minWidth: 220,
-                background: "white",
+                // surface-soft не сливается с amber-фоном «моего» пузыря и
+                // одинаково читается в обеих темах.
+                background: "var(--surface-soft)",
                 color: "var(--ink)",
                 border: "1px solid var(--border)",
                 borderRadius: 8,
