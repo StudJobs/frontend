@@ -6,9 +6,10 @@
   position: sticky;
   top: 0;
   z-index: var(--z-header);
-  background: rgba(15, 16, 17, 0.78);
+  background: var(--surface-glass);
   backdrop-filter: saturate(140%) blur(14px);
   -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid var(--border);
 }
 
 .sj-header__inner {
@@ -165,6 +166,36 @@
   background: var(--surface);
 }
 
+/* Пульсация для непрочитанных. Внутренний glow + лёгкое масштабирование
+   привлекает внимание, но не мешает кликам (transform-origin центрирован,
+   pointer-events не блокируется). Анимация бесконечная пока есть unread. */
+.sj-bell__btn--pulse {
+  color: var(--brand);
+  border-color: var(--brand);
+  animation: sj-bell-pulse 1.8s ease-in-out infinite;
+}
+@keyframes sj-bell-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--brand-glow);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+    transform: scale(1.06);
+  }
+}
+/* Качание иконки внутри кнопки — лёгкое «звяк» при появлении нового сообщения. */
+.sj-bell__btn--pulse svg {
+  animation: sj-bell-shake 1.8s ease-in-out infinite;
+  transform-origin: 50% 10%;
+}
+@keyframes sj-bell-shake {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-12deg); }
+  20%, 40% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
+}
+
 .sj-bell__dot {
   position: absolute;
   top: -4px;
@@ -229,12 +260,50 @@
 
 .sj-bell__item {
   padding: var(--space-3) var(--space-5);
+  padding-right: 36px; /* место под крестик */
   cursor: pointer;
   border-bottom: 1px solid var(--border-soft);
   transition: background var(--duration-fast) var(--ease);
+  position: relative;
+  /* fade-in новых элементов; при первом монтировании выглядит как мягкое
+     появление. Старые элементы уже отрендерены, поэтому юзер видит анимацию
+     только на свежих. */
+  animation: sj-bell-item-in 220ms var(--ease) both;
 }
 .sj-bell__item:hover { background: var(--surface-elev); }
 .sj-bell__item:last-child { border-bottom: none; }
+@keyframes sj-bell-item-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sj-bell__dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-subtle);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease),
+              color var(--duration-fast) var(--ease),
+              border-color var(--duration-fast) var(--ease);
+}
+.sj-bell__item:hover .sj-bell__dismiss { opacity: 1; }
+.sj-bell__dismiss:hover {
+  color: var(--danger, #d76262);
+  border-color: var(--danger, #d76262);
+}
 
 .sj-bell__item--unread {
   background: var(--surface-warm);

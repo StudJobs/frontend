@@ -39,6 +39,11 @@ export interface SjNotification {
 // LAST_SEEN_KEY — момент когда юзер последний раз открывал уведомления.
 // События с ts > last_seen и не "моими" считаются непрочитанными.
 const LAST_SEEN_KEY = "sj_notif_last_seen";
+// DISMISSED_KEY — ids уведомлений, которые юзер скрыл «крестиком». Хранятся в
+// localStorage с TTL 30 дней (id уведомления стабилен в рамках сущности —
+// chat-thread, application и т.д. — иначе скрытие тут же бы воскресло).
+const DISMISSED_KEY = "sj_notif_dismissed";
+const DISMISS_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function getLastSeen(): number {
   const v = localStorage.getItem(LAST_SEEN_KEY);
@@ -46,8 +51,43 @@ function getLastSeen(): number {
   return Number.isFinite(t) && t > 0 ? t : 0;
 }
 
-function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => void } {
+type DismissedMap = Record<string, number>;
+function getDismissed(): DismissedMap {
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY);
+    if (!raw) return {};
+    const m = JSON.parse(raw) as DismissedMap;
+    // Чистим протухшие, чтобы карта не пухла бесконечно.
+    const now = Date.now();
+    const out: DismissedMap = {};
+    for (const [k, t] of Object.entries(m)) {
+      if (typeof t === "number" && now - t < DISMISS_TTL_MS) out[k] = t;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+function setDismissed(m: DismissedMap) {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(m));
+  } catch {
+    /* quota — ignore */
+  }
+}
+
+function useLiveNotifications(): {
+  items: SjNotification[];
+  markAllRead: () => void;
+  dismiss: (id: string) => void;
+  clearAll: () => void;
+  hasNew: boolean;
+  ack: () => void;
+} {
   const [items, setItems] = useState<SjNotification[]>([]);
+  // hasNew → bell пульсирует. Снимается через ack() при открытии шторки.
+  const [hasNew, setHasNew] = useState(false);
+  const lastMaxTsRef = useRef<number>(0);
 
   async function tick() {
     const role = localStorage.getItem("role") || "";
@@ -281,13 +321,27 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
       }
     }
 
-    // De-dup по id + сортировка свежее сверху.
+    // De-dup по id + фильтрация скрытых юзером + сортировка свежее сверху.
+    const dismissed = getDismissed();
     const map = new Map<string, SjNotification>();
-    for (const n of acc) map.set(n.id, n);
+    for (const n of acc) {
+      if (dismissed[n.id]) continue;
+      map.set(n.id, n);
+    }
     const sorted = [...map.values()].sort(
       (a, b) => Date.parse(b.ts) - Date.parse(a.ts)
     );
-    setItems(sorted.slice(0, 30));
+    const top = sorted.slice(0, 30);
+
+    // Детектим «прилетело новое» — для пульсации колокольчика. Сравниваем
+    // максимальный ts с предыдущим тиком; если выше — поднимаем флаг.
+    const maxTs = top.reduce((m, n) => Math.max(m, Date.parse(n.ts) || 0), 0);
+    if (lastMaxTsRef.current > 0 && maxTs > lastMaxTsRef.current) {
+      setHasNew(true);
+    }
+    lastMaxTsRef.current = maxTs;
+
+    setItems(top);
   }
 
   useEffect(() => {
@@ -302,7 +356,28 @@ function useLiveNotifications(): { items: SjNotification[]; markAllRead: () => v
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
-  return { items, markAllRead };
+  function dismiss(id: string) {
+    const m = getDismissed();
+    m[id] = Date.now();
+    setDismissed(m);
+    setItems((prev) => prev.filter((n) => n.id !== id));
+  }
+
+  function clearAll() {
+    const m = getDismissed();
+    items.forEach((n) => {
+      m[n.id] = Date.now();
+    });
+    setDismissed(m);
+    setItems([]);
+    localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
+  }
+
+  function ack() {
+    setHasNew(false);
+  }
+
+  return { items, markAllRead, dismiss, clearAll, hasNew, ack };
 }
 
 function useMockNotifications(): {
@@ -409,13 +484,14 @@ const KIND_LABEL: Record<NotifKind, string> = {
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { items, markAllRead } = useLiveNotifications();
+  const { items, markAllRead, dismiss, clearAll, hasNew, ack } = useLiveNotifications();
   const unread = items.filter((n) => !n.read).length;
 
   useEffect(() => {
     if (!open) return;
-    // Открыли панель — считаем что юзер всё увидел.
+    // Открыли панель — считаем что юзер всё увидел, и снимаем пульсацию.
     markAllRead();
+    ack();
     const onDoc = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -424,11 +500,16 @@ export default function NotificationsBell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Пульсирующая подсветка: класс держим всегда пока есть unread, чтобы юзер
+  // не пропустил уведомление — но как только открыл шторку, ack() снимает hasNew
+  // и markAllRead() обнуляет unread → bell перестаёт пульсировать.
+  const pulse = hasNew || unread > 0;
+
   return (
     <div className="sj-bell" ref={wrapRef}>
       <button
         type="button"
-        className="sj-bell__btn"
+        className={"sj-bell__btn" + (pulse ? " sj-bell__btn--pulse" : "")}
         onClick={() => setOpen((s) => !s)}
         aria-label={`Уведомления${unread ? ` (${unread} новых)` : ""}`}
       >
@@ -436,18 +517,31 @@ export default function NotificationsBell() {
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
           <path d="M10 21a2 2 0 0 0 4 0" />
         </svg>
-        {unread > 0 && <span className="sj-bell__dot" aria-hidden="true">{unread}</span>}
+        {unread > 0 && <span className="sj-bell__dot" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}
       </button>
 
       {open && (
         <div className="sj-bell__panel" role="menu">
           <div className="sj-bell__head">
             <span className="eyebrow">Уведомления</span>
-            {unread > 0 && (
-              <button type="button" className="sj-bell__markread" onClick={markAllRead}>
-                Прочитать все
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              {unread > 0 && (
+                <button type="button" className="sj-bell__markread" onClick={markAllRead}>
+                  Прочитать все
+                </button>
+              )}
+              {items.length > 0 && (
+                <button
+                  type="button"
+                  className="sj-bell__markread"
+                  onClick={clearAll}
+                  title="Скрыть все уведомления"
+                  style={{ color: "var(--ink-muted)" }}
+                >
+                  Очистить
+                </button>
+              )}
+            </div>
           </div>
 
           {items.length === 0 ? (
@@ -468,6 +562,18 @@ export default function NotificationsBell() {
                     if (n.link) window.location.href = n.link;
                   }}
                 >
+                  <button
+                    type="button"
+                    className="sj-bell__dismiss"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dismiss(n.id);
+                    }}
+                    aria-label="Скрыть уведомление"
+                    title="Скрыть"
+                  >
+                    ×
+                  </button>
                   <div className="sj-bell__item-row">
                     <span className="sj-bell__kind">{KIND_LABEL[n.kind]}</span>
                     <span className="sj-bell__time">{timeAgo(n.ts)}</span>
