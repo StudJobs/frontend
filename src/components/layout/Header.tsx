@@ -204,6 +204,26 @@ export default function Header() {
               <NotificationsBell />
 
               <div className="sj-usermenu" ref={menuRef}>
+                {role && (
+                  <span
+                    title={`Вы вошли как «${roleLabel(role)}»`}
+                    style={{
+                      padding: "3px 8px",
+                      borderRadius: 999,
+                      fontSize: 10,
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
+                      fontWeight: 800,
+                      background: "var(--brand-soft)",
+                      color: "var(--brand)",
+                      border: "1px solid var(--brand)",
+                      marginRight: 8,
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    {roleLabel(role)}
+                  </span>
+                )}
                 <button
                   type="button"
                   className="sj-avatar"
