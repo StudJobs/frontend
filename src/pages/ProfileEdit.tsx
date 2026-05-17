@@ -52,6 +52,7 @@ export default function ProfileEdit() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [message, setMessage] = useState("");
   const [skillSlugs, setSkillSlugs] = useState<string[]>([]);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -74,6 +75,7 @@ export default function ProfileEdit() {
 
         if (data.avatar_id) setAvatarId(String(data.avatar_id));
         if (Array.isArray(data.skill_slugs)) setSkillSlugs(data.skill_slugs);
+        if (typeof data.is_hidden === "boolean") setIsHidden(data.is_hidden);
 
         try {
           const list = await AchievementsAPI.list();
@@ -226,6 +228,7 @@ export default function ProfileEdit() {
         github: formData.github.trim() || undefined,
         description: formData.description || undefined,
         skill_slugs: skillSlugs.length ? skillSlugs : undefined,
+        is_hidden: isHidden,
       };
 
       const resp = await apiGateway({
@@ -417,6 +420,24 @@ export default function ProfileEdit() {
               value={formData.description}
               onChange={handleChange}
             />
+          </div>
+
+          <h3 className="subsection-title">Приватность</h3>
+          <div className="form-field" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <input
+              type="checkbox"
+              id="is_hidden"
+              checked={isHidden}
+              onChange={(e) => setIsHidden(e.target.checked)}
+              style={{ marginTop: 4, accentColor: "var(--brand)" }}
+            />
+            <label htmlFor="is_hidden" style={{ cursor: "pointer", flex: 1 }}>
+              <div style={{ fontWeight: 700 }}>Скрыть профиль от других студентов</div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                HR-сотрудники, владельцы компаний и эксперты по-прежнему могут видеть ваш профиль —
+                иначе они не смогли бы вас находить. Другие студенты увидят «Профиль скрыт».
+              </div>
+            </label>
           </div>
 
           <div className="submit-row">
