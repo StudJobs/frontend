@@ -129,10 +129,9 @@ function CompanyCarousel({
       ) : (
         <div
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
             gap: 14,
-            overflowX: "auto",
-            paddingBottom: 8,
           }}
         >
           {items.map((c) => {
@@ -141,8 +140,6 @@ function CompanyCarousel({
               <div
                 key={id}
                 style={{
-                  minWidth: 260,
-                  maxWidth: 260,
                   borderRadius: 14,
                   background: "var(--surface)",
                   border: "1px solid var(--border)",
