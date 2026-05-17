@@ -27,21 +27,28 @@ function getRole(): string | null {
   }
 }
 
+// Короткий код роли для аватарки. Меняется в зависимости от того, кто залогинен:
+// СТ — студент, HR — рекрутер, КМ — компания (owner), ЭКС — эксперт.
 function getInitials(): string {
   try {
-    const raw = localStorage.getItem("me") || localStorage.getItem("user") || "";
-    if (!raw) return "СТ";
-    const u = JSON.parse(raw);
-    const name = (u?.first_name || u?.name || u?.email || "").toString();
-    if (!name) return "СТ";
-    const parts = name.split(/[\s@.]+/).filter(Boolean);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+    const role = localStorage.getItem("role") || "";
+    switch (role) {
+      case "ROLE_STUDENT":
+        return "СТ";
+      case "ROLE_EMPLOYER":
+        return "HR";
+      case "ROLE_COMPANY_OWNER":
+      case "ROLE_COMPANY":
+        return "КМ";
+      case "ROLE_EXPERT":
+        return "ЭКС";
+      case "ROLE_DEVELOPER":
+        return "DEV";
     }
-    return parts[0].slice(0, 2).toUpperCase();
   } catch {
-    return "СТ";
+    /* fall through */
   }
+  return "СТ";
 }
 
 function navForRole(role: string | null): NavItem[] {
@@ -204,32 +211,13 @@ export default function Header() {
               <NotificationsBell />
 
               <div className="sj-usermenu" ref={menuRef}>
-                {role && (
-                  <span
-                    title={`Вы вошли как «${roleLabel(role)}»`}
-                    style={{
-                      padding: "3px 8px",
-                      borderRadius: 999,
-                      fontSize: 10,
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      fontWeight: 800,
-                      background: "var(--brand-soft)",
-                      color: "var(--brand)",
-                      border: "1px solid var(--brand)",
-                      marginRight: 8,
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
-                    {roleLabel(role)}
-                  </span>
-                )}
                 <button
                   type="button"
                   className="sj-avatar"
                   onClick={() => setMenuOpen((s) => !s)}
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
+                  title={role ? `Вы вошли как «${roleLabel(role)}»` : ""}
                 >
                   {initials}
                 </button>
