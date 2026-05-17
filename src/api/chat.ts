@@ -17,7 +17,15 @@ export type ChatMessageList = {
   pagination?: { total?: number; pages?: number; current_page?: number };
 };
 
-export type ThreadKind = "application" | "task" | "quest";
+export type ThreadKind = "application" | "task" | "quest" | "direct";
+
+// Детерминированный rid для прямого чата: два UUID, отсортированных по
+// возрастанию, разделённых «_». Обе стороны вычислят одинаковый thread_id.
+export function directThreadRid(userA: string, userB: string): string {
+  const a = String(userA || "").trim();
+  const b = String(userB || "").trim();
+  return [a, b].sort().join("_");
+}
 
 const unwrap = (r: any) => r?.data ?? r ?? {};
 

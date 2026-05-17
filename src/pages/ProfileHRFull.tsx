@@ -12,6 +12,7 @@ import checkLong from "../assets/images/check-long.png";
 
 import { apiGateway } from "../api/apiGateway";
 import { AchievementsAPI, AchievementItem } from "../api/achievements";
+import { MembershipAPI } from "../api/membership";
 
 type UserProfile = {
   id?: string;
@@ -570,12 +571,28 @@ export default function ProfileHRFull() {
           setAvatarUrl(data?.avatar_url || null);
         }
 
-        const storedIds = hid
-          ? safeJsonParse<string[]>(localStorage.getItem(hrCompaniesKey(hid)), [])
-          : [];
-        const ids = Array.isArray(storedIds) ? storedIds : [];
+        // Источник правды для «компаний HR» — APPROVED memberships из бэка,
+        // а не локальное хранилище. localStorage оставляли только как анти-flicker
+        // кэш, но он тёк между аккаунтами в одном браузере: после смены HR-юзера
+        // показывались чужие компании. Теперь — только то, что одобрил owner.
+        let memberships: any[] = [];
+        try {
+          memberships = await MembershipAPI.myAll();
+        } catch {
+          memberships = [];
+        }
+        const approvedIds = memberships
+          .filter((m: any) => Number(m?.status) === 2)
+          .map((m: any) => String(m?.company_id || ""))
+          .filter(Boolean);
+        // Синхронизируем legacy-ключ, чтобы редактор не выдавал устаревший список.
+        if (hid) {
+          try {
+            localStorage.setItem(hrCompaniesKey(hid), JSON.stringify(approvedIds));
+          } catch { /* quota — ignore */ }
+        }
 
-        await reloadCompanies(ids);
+        await reloadCompanies(approvedIds);
         await reloadVacancies(hid);
       } catch (e) {
         console.error("HR profile load error:", e);
@@ -1162,7 +1179,7 @@ export default function ProfileHRFull() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "linear-gradient(90deg, rgba(0,0,0,.45), rgba(0,0,0,.10))",
+                      background: "var(--card-image-overlay)",
                       zIndex: 1,
                     }}
                   />

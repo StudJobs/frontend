@@ -437,8 +437,7 @@ export default function Companies() {
                       style={{
                         position: "absolute",
                         inset: 0,
-                        background:
-                          "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.30) 100%)",
+                        background: "var(--card-image-overlay)",
                         zIndex: 1,
                       }}
                     />

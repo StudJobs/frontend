@@ -7,9 +7,9 @@
    аккуратные радиусы, дисциплинированная типографика.
 
    Шрифты:
-     - Fraunces (display, variable: opsz + wght + SOFT)  ─ заголовки, hero
-     - DM Sans (body, variable opsz)                     ─ интерфейс
-     - JetBrains Mono (mono)                             ─ ID, теги, метки
+     - HSE Sans (5 начертаний: 200 / 400 / 400i / 600 / 700)  — всё
+       (заголовки, body, метки). Подключается локально через
+       src/fonts/hsesans/hsesans.css, не требует Google Fonts CDN.
 
    Цветовая логика: одна доминанта (amber), один verified-сигнал (lime),
    статусы (success/warning/danger/info) ИНЫЕ оттенки, чтобы не пересекаться
@@ -76,6 +76,13 @@
   --radius-xl:        22px;
   --radius-pill:      999px;
 
+  /* ── Карточки с фоновым изображением (Companies, HR-profile)  ──────────
+     Overlay затемняет картинку, чтобы белый текст на ней оставался читаемым
+     в тёмной теме. В светлой теме нужно «выбеливать», не «затемнять» —
+     см. :root[data-theme="light"] ниже. */
+  --card-image-overlay:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.30) 100%);
+
   /* ── Тени (мягкие, тёплые) ──────────────────────────────────────────── */
   --shadow-xs:        0 1px 0 rgba(0, 0, 0, 0.3);
   --shadow-sm:        0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -104,9 +111,11 @@
   --space-32:         128px;
 
   /* ── Typography ─────────────────────────────────────────────────────── */
-  --font-display:     "Fraunces", "Iowan Old Style", "Georgia", serif;
-  --font-sans:        "DM Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono:        "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Один корпоративный шрифт на всё — HSE Sans (5 начертаний: 200 / 400 / 400i / 600 / 700).
+     Это даёт визуальную консистентность и убирает зависимость от внешних CDN. */
+  --font-display:     "HSE Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans:        "HSE Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:        ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
 
   /* fluid type scale (clamp: minVW = 320, maxVW = 1440) */
   --text-xs:          clamp(11px, 0.65rem + 0.1vw, 12px);
@@ -214,6 +223,11 @@
   --shadow-sm:        0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md:        0 6px 18px -4px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.05);
   --shadow-lg:        0 18px 40px -8px rgba(0, 0, 0, 0.14), 0 6px 14px rgba(0, 0, 0, 0.05);
+
+  /* Light-theme card overlay: «выбеливаем» картинку, текст у нас тёмный —
+     если оставить чёрный overlay, карточка читается «мрачно» (см. скрин юзера). */
+  --card-image-overlay:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.88) 55%, rgba(255, 255, 255, 0.78) 100%);
 
   /* Legacy aliases (одни значения с новыми, нужно для старого CSS) */
   --bg:               var(--paper);

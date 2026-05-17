@@ -12,6 +12,11 @@ import { UsersAPI } from "../api/users";
 export default function Messages() {
   const [params, setParams] = useSearchParams();
   const initialThread = params.get("thread") || "";
+  // ?peer=<uuid> — пришли с публичного профиля «Написать студенту». Активного
+  // треда ещё нет; после загрузки списка попробуем найти существующий тред
+  // с этим peer-ом (по application/task/quest) и подсветить его. Если нет —
+  // покажем подсказку «Прямой чат недоступен, открой через отклик/микрозадачу».
+  const initialPeer = params.get("peer") || "";
 
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loadingThreads, setLoadingThreads] = useState(false);
@@ -35,21 +40,65 @@ export default function Messages() {
   }, []);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
+  // Локально подтянутое имя собеседника по peer_id (для direct-чатов до того,
+  // как бэк успеет вернуть тред со своей стороны). Без этого правая шапка показывала
+  // бы UUID-фрагмент вместо имени.
+  const [peerName, setPeerName] = useState<string>("");
+  const [peerRole, setPeerRole] = useState<string>("");
+
   // Если активный тред пришёл по URL и его нет в списке от бэка — рендерим как
   // временный «локальный» элемент: юзер сразу видит вход в этот диалог в левой
   // колонке, не приходится ждать пока бэк его подтянет.
   const displayThreads = useMemo<ChatThread[]>(() => {
     if (!activeId || threads.some((t) => t.thread_id === activeId)) return threads;
     const parts = activeId.split(":");
+    const kind = parts[0];
+    const rid = parts[1] || "";
+    let pid = "";
+    // Для direct rid = "<a>_<b>" — собеседник тот, кто не я.
+    if (kind === "direct" && rid && myId) {
+      const [a, b] = rid.split("_");
+      if (a === myId) pid = b;
+      else if (b === myId) pid = a;
+    }
     return [
       {
         thread_id: activeId,
-        kind: parts[0],
-        resource_id: parts[1] || "",
+        kind,
+        resource_id: rid,
+        peer_id: pid || undefined,
+        peer_name: peerName || undefined,
+        peer_role: peerRole || undefined,
+        context_title: kind === "direct" ? "Личный чат" : undefined,
       } as ChatThread,
       ...threads,
     ];
-  }, [threads, activeId]);
+  }, [threads, activeId, myId, peerName, peerRole]);
+
+  // Подтягиваем имя собеседника, если direct-тред новый и в displayThreads его ещё нет.
+  useEffect(() => {
+    if (!activeId.startsWith("direct:") || !myId) return;
+    const rid = activeId.slice("direct:".length);
+    const [a, b] = rid.split("_");
+    const peer = a === myId ? b : b === myId ? a : "";
+    if (!peer) return;
+    (async () => {
+      try {
+        const u = await UsersAPI.get(peer);
+        if (!u) return;
+        const name = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
+        setPeerName(name || u.email || peer.slice(0, 8));
+        const role = String(u.role || "");
+        if (role === "ROLE_STUDENT") setPeerRole("Студент");
+        else if (role === "ROLE_EMPLOYER") setPeerRole("HR");
+        else if (role === "ROLE_COMPANY_OWNER") setPeerRole("Владелец компании");
+        else if (role === "ROLE_EXPERT") setPeerRole("Эксперт");
+        else setPeerRole("");
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [activeId, myId]);
 
   const active = useMemo(() => displayThreads.find((t) => t.thread_id === activeId), [displayThreads, activeId]);
 
@@ -58,6 +107,27 @@ export default function Messages() {
     try {
       const ts = await ChatAPI.listThreads();
       setThreads(ts);
+      // peer-навигация: ищем существующий тред с этим peer-ом и подсвечиваем.
+      // Если такого треда ещё нет — открываем direct-диалог (создастся при первой
+      // отправке). Раньше показывали ошибку «диалог недоступен», что было дезой:
+      // у HR не было способа начать общение со студентом без отклика.
+      if (initialPeer && !activeId) {
+        const found = ts.find((t) => t.peer_id === initialPeer);
+        if (found) {
+          setActiveId(found.thread_id);
+          setParams({ thread: found.thread_id }, { replace: true });
+          return;
+        }
+        if (myId && initialPeer !== myId) {
+          const rid = [myId, initialPeer].sort().join("_");
+          const tid = `direct:${rid}`;
+          setActiveId(tid);
+          setParams({ thread: tid }, { replace: true });
+          return;
+        }
+        // Себе писать нельзя; покажем стандартное «выберите диалог».
+        return;
+      }
       // Если активного нет — пробуем подсветить первый.
       if (!activeId && ts.length > 0) {
         setActiveId(ts[0].thread_id);
@@ -178,6 +248,7 @@ export default function Messages() {
     if (k === "task") return "Задача";
     if (k === "quest") return "Квест";
     if (k === "application") return "Отклик";
+    if (k === "direct") return "Личный чат";
     return "Тред";
   }
 
@@ -195,6 +266,8 @@ export default function Messages() {
         return `Заказчик · ${ctx}`;
       case "quest":
         return `Эксперт · ${ctx}`;
+      case "direct":
+        return "Личный чат";
     }
     return ctx;
   }

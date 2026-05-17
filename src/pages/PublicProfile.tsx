@@ -4,8 +4,9 @@ import "../assets/styles/global.css";
 import "../assets/styles/profile-mospolyjob.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
-import avatarFallback from "../assets/images/человек.png";
 import { UsersAPI, UserListItem } from "../api/users";
+import { directThreadRid } from "../api/chat";
+import { getCurrentUserId } from "../api/apiGateway";
 import { Skill, SkillsAPI } from "../api/skills";
 import {
   AchievementItem,
@@ -113,7 +114,23 @@ export default function PublicProfile() {
       ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
       : "Пользователь";
 
-  const avatar = profile?.avatar_url || avatarFallback;
+  const avatar = profile?.avatar_url;
+  // Инициалы для bubble-аватара (когда фото не загружено студентом).
+  const initials = useMemo(() => {
+    if (!profile) return "·";
+    const f = (profile.first_name || "").trim();
+    const l = (profile.last_name || "").trim();
+    if (f || l) return (f[0] || "").toUpperCase() + (l[0] || "").toUpperCase();
+    const e = (profile.email || "").trim();
+    return (e[0] || "·").toUpperCase();
+  }, [profile?.first_name, profile?.last_name, profile?.email]);
+  // Текущая роль зрителя — нужна для условного показа кнопки «Написать» (HR/owner/expert).
+  const myRole =
+    typeof window !== "undefined" ? window.localStorage.getItem("role") || "" : "";
+  const canMessage =
+    myRole === "ROLE_EMPLOYER" ||
+    myRole === "ROLE_COMPANY_OWNER" ||
+    myRole === "ROLE_EXPERT";
   // На публичной странице показываем ТОЛЬКО подтверждённые навыки (verified_skill_slugs).
   // Заявленные без верификации в публику не пускаем — иначе любой набил бы себе тегов.
   const verifiedSet = useMemo(
@@ -150,7 +167,29 @@ export default function PublicProfile() {
             {/* Header card */}
             <div className="profile-card">
               <div className="profile-photo">
-                <img src={avatar} alt={fullName} />
+                {avatar ? (
+                  <img src={avatar} alt={fullName} />
+                ) : (
+                  <div
+                    aria-hidden
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "grid",
+                      placeItems: "center",
+                      background:
+                        "linear-gradient(135deg, var(--brand-soft, #fce7b3) 0%, var(--surface-elev, #1f2123) 100%)",
+                      color: "var(--ink)",
+                      fontFamily: "var(--font-display)",
+                      fontWeight: 700,
+                      fontSize: "clamp(48px, 7vw, 96px)",
+                      letterSpacing: "0.04em",
+                      borderRadius: "inherit",
+                    }}
+                  >
+                    {initials}
+                  </div>
+                )}
               </div>
               <div className="profile-info">
                 <div
@@ -225,6 +264,55 @@ export default function PublicProfile() {
                   <Stat label="Подтверждённых проектов" value={verifiedCount} />
                   <Stat label="Навыков" value={skills.length} />
                 </div>
+
+                {canMessage && profile.id ? (
+                  <div
+                    style={{
+                      marginTop: 18,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Link
+                      className="sj-btn sj-btn--primary"
+                      to={(() => {
+                        const me = getCurrentUserId();
+                        if (!me || !profile.id) return `/messages?peer=${encodeURIComponent(profile.id || "")}`;
+                        const rid = directThreadRid(me, profile.id);
+                        return `/messages?thread=direct:${encodeURIComponent(rid)}`;
+                      })()}
+                      style={{
+                        textDecoration: "none",
+                        padding: "10px 18px",
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        background: "var(--brand)",
+                        color: "var(--ink-on-brand)",
+                      }}
+                    >
+                      ✉ Написать студенту
+                    </Link>
+                    {profile.tg ? (
+                      <a
+                        href={`https://t.me/${profile.tg.replace(/^@/, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="sj-btn sj-btn--ghost"
+                        style={{
+                          textDecoration: "none",
+                          padding: "10px 16px",
+                          borderRadius: 12,
+                          fontWeight: 700,
+                          border: "1px solid var(--border)",
+                          color: "var(--ink)",
+                        }}
+                      >
+                        Telegram · {profile.tg}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 {profile.resume_url ? (
                   <div style={{ marginTop: 16 }}>

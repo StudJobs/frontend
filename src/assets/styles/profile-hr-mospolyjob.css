@@ -214,6 +214,11 @@
   opacity: 0.06;
   filter: invert(1);
 }
+:root[data-theme="light"] .hr-card-decor img {
+  /* в светлой теме инвертированный декор превращается в чёрный мазок — гасим */
+  filter: none;
+  opacity: 0.05;
+}
 
 .hr-carousel { margin-top: var(--space-4); overflow: hidden; }
 

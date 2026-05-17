@@ -26,6 +26,24 @@ export const MembershipAPI = {
     }
   },
 
+  // Все memberships текущего пользователя (PENDING+APPROVED). Используется
+  // ProfileHRFull (карточки компаний) и HRMembership (список заявок). REJECTED
+  // не возвращаются — UI не должен их показывать без явного запроса.
+  async myAll(status?: number): Promise<CompanyMember[]> {
+    try {
+      const data = unwrap(
+        await apiGateway({
+          method: "GET",
+          url: "/company/memberships/my",
+          params: status ? { status } : {},
+        })
+      );
+      return Array.isArray(data?.memberships) ? data.memberships : [];
+    } catch {
+      return [];
+    }
+  },
+
   // Owner: список сотрудников своей компании (filter по status).
   async listMembers(status?: number): Promise<CompanyMember[]> {
     const data = unwrap(
