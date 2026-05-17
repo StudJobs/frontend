@@ -376,8 +376,25 @@ export default function HRTasks() {
             ) : null}
 
             {submissions.length === 0 ? (
-              <div style={{ opacity: 0.7, fontWeight: 700 }}>
-                Пока нет отправленных решений.
+              <div style={{ padding: 14, background: "var(--surface-soft)", borderRadius: 10 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                  Пока нет отправленных решений.
+                </div>
+                <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
+                  {activeTask.status === TASK_STATUS.OPEN ? (
+                    <>
+                      Задача в статусе «<strong>Открыта</strong>» — её ещё никто не взял.
+                      Студенту нужно зайти на <code>/tasks</code>, найти эту задачу
+                      и нажать «Взять задачу». После загрузки решения оно появится здесь.
+                    </>
+                  ) : (
+                    <>
+                      Задача в статусе «<strong>{taskStatusLabel(activeTask.status)}</strong>» —
+                      студент взял её, но ещё не отправил решение. Подождите или напишите ему
+                      в чат.
+                    </>
+                  )}
+                </div>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
